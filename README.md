@@ -1,88 +1,138 @@
 # Fallout London Companion
 
-A multi-platform native companion for Fallout 4 / Fallout: London, with an ATTA-Boy interface and a local-network connection to the game's Pip-Boy companion service. This is an independent fan project and is not affiliated with or endorsed by Bethesda or Team FOLON.
+An independent, multi-platform ATTA-Boy-style companion for Fallout 4 / Fallout: London. It connects over a trusted local network to the game's Pip-Boy companion service and presents player status, inventory, data, map and radio interfaces.
 
-## Consolidated project
+This project is not affiliated with, endorsed by, or sponsored by Bethesda or Team FOLON.
 
-This repository brings together the current iOS implementation and the Android/desktop implementations from the companion project:
+## Platforms and deliverables
 
-| Platform | Implementation | Build output |
+| Platform | Native implementation | Release package |
 |---|---|---|
-| iPhone / iPad | SwiftUI | Unsigned IPA for SideStore |
-| Android phone / tablet | Kotlin + Jetpack Compose | APK |
-| Windows | Kotlin/JVM + Compose Multiplatform | MSI installer + portable EXE |
-| Linux | Kotlin/JVM + Compose Multiplatform | AppImage, Flatpak, DEB, RPM |
+| iPhone / iPad | SwiftUI | Unsigned IPA |
+| Android phone / tablet | Kotlin + Jetpack Compose | APK (debug build) |
+| Windows | Kotlin/JVM + Compose Multiplatform | MSI installer and portable EXE |
+| Linux | Kotlin/JVM + Compose Multiplatform | AppImage, DEB, RPM and Flatpak |
 
-The iOS app remains the primary protocol and product reference. Android and desktop are native companion clients ported from the parallel project. The implementations are not yet proven to have complete feature parity; see `Documentation/SCAFFOLDING_CHECKLIST.md` and the per-platform build workflows.
+The iOS implementation is the primary product/protocol reference. Android and desktop are parallel native clients. A successful build does not establish complete feature parity or live-game compatibility; the verification boundaries below are intentional.
 
-## Core interface
+## Interface
 
-- **STAT** — HP/AP, radiation, carry weight, level/XP, SPECIAL, limb condition and active effects where exposed by the live database.
-- **INV** — live inventory categories and item metadata, with platform-specific item presentation.
-- **DATA** — quest/objective records and searchable database values; the iOS browser supports nested navigation and full TXT/copy export.
-- **MAP** — game-provided player coordinates, discovered/visible locations and local-map snapshots. A curated Fallout: London world-map basemap is still a separate work item.
-- **RADIO** — station name/frequency/range/active state and supported station commands.
-- **MEDICAL** — manual Stimpak/RadAway actions and opt-in Auto-Stimpak where the verified game data exposes the required item references.
+- **STAT** — HP/AP, radiation, carry weight, level/XP, SPECIAL, limb condition, effects and medical controls where the live database exposes the required data.
+- **INV** — inventory categories, search, item detail and supported item metadata/actions.
+- **DATA** — quest/objective information and a searchable database browser. iOS supports nested navigation and full TXT/copy export.
+- **MAP** — game-provided coordinates, discovered/visible locations and local-map snapshots. A curated Fallout: London world-map basemap is not yet bundled.
+- **RADIO** — station state and supported station controls.
+- **MEDICAL** — manual Stimpak/RadAway controls and opt-in Auto-Stimpak where verified item references are available.
 
-The game remains authoritative. The app sends supported commands and waits for game responses or subsequent data updates; it must not display an unconfirmed action as successful.
+The game remains authoritative. An action is not successful until the game confirms it or subsequent game data reflects it.
 
-## Protocol contract
+## Connection and protocol
 
-The clients implement the established Pip-Boy companion protocol:
+The current target is the **PC Pip-Boy companion service on a private LAN**.
 
-- UDP discovery: port 28000.
-- TCP connection: port 27000.
-- Five-byte little-endian frame header: UInt32 payload size + UInt8 channel.
-- Data updates, local-map updates, command requests and command responses.
-- Incremental binary database/object graph decoding.
-- JSON RPC command envelope and capability-gated gameplay actions.
+| Service | Port | Purpose |
+|---|---:|---|
+| UDP | 28000 | PC companion autodiscovery |
+| TCP | 27000 | Companion data and command stream |
 
-See `Documentation/PROTOCOL.md`, `Documentation/REFERENCE_SOURCES.md` and `Shared/README.md`. Protocol claims are tied to upstream reverse-engineering references; platform-specific networking, lifecycle, UI, audio, haptics and rendering remain native.
+The documented frame header is five bytes: a little-endian UInt32 payload length followed by a UInt8 message type. The clients handle the established handshake, busy/refusal, heartbeat, data-update, local-map and command-response channels, plus incremental binary database/object-graph updates.
 
-## Build and release
+Protocol behavior is based on public community reverse-engineering references, not copied wholesale. The references describe the Fallout 4 companion protocol; Fallout: London-specific paths, IDs, item/quest/radio structures and map geography still require verification against actual London sessions.
 
-Every push or pull request targeting `main` runs the applicable platform workflows:
+**Xbox discovery is not currently supported.** Its separate UDP/5050 discovery format is not sufficiently verified for this project.
 
-- `Build Fallout London Companion IPA`
-- `Build Fallout London Companion Android`
-- `Build Fallout London Companion Windows`
-- `Build Fallout London Companion Linux`
+See:
+- [Protocol contract and verification limits](Documentation/PROTOCOL.md)
+- [Reference-source register and audit findings](Documentation/REFERENCE_SOURCES.md)
+- [Shared cross-platform contract](Shared/README.md)
+- [UI scaffolding checklist](Documentation/SCAFFOLDING_CHECKLIST.md)
+- [Asset provenance and usage](Documentation/ASSETS.md)
 
-The numbered combined release workflow creates a GitHub Release only after successful artifacts exist for all four platform groups.
+## Reference sources
 
-### iOS / iPadOS
+These are research references for understanding and cross-checking the public Pip-Boy companion protocol:
 
-1. Open **Actions** and select **Build Fallout London Companion IPA**.
-2. Download the `Fallout-London-Companion-ipa` artifact.
-3. Install through SideStore or another supported signing workflow.
+1. [PyPipboy](https://github.com/matzman666/PyPipboy) — discovery, TCP framing, handshake, keep-alive, binary updates, local-map packets and RPC transport.
+2. [Pipboy specification](https://github.com/mattbaker/pipboyspec) — human-readable discovery, communication, channel and RPC documentation.
+3. [pipboylib](https://github.com/RobCoIndustries/pipboylib) — independent JavaScript constants, binary database parsing, map parsing and command IDs.
+4. [NimVek/pipboy](https://github.com/NimVek/pipboy) — independent protocol implementation and packet investigation.
+5. [MrPippy](https://github.com/ekimekim/mrpippy) — Python encoding/decoding and data-management reference.
+6. [PipBoyClient](https://github.com/cpopp/PipBoyClient) — minimal discovery, framing, heartbeat and RPC experiment.
+7. [Pipboy Explorations](https://github.com/mattbaker/pipboy-explorations) — earlier protocol exploration.
+8. [Pip-Boy Companion App Enabler (AE)](https://www.nexusmods.com/fallout4/mods/108133) — context on companion-service availability in modern Fallout 4 runtimes; not a protocol specification or Fallout: London compatibility guarantee.
 
-The IPA is unsigned. Physical-device testing is still required. Apple's multicast entitlement may be required for UDP broadcast discovery; manual TCP connection by the gaming PC's private LAN IP is the fallback. Keep the game and phone on a trusted private network and do not expose ports 27000/28000 to the public internet.
+The source register records scope, limitations and the local audit conclusions. Upstream projects retain their own licenses. This repository does not import their implementation code wholesale; GPL-licensed code must not be copied here without a deliberate license-compatibility review.
 
-### Android
+## Build, CI and automatic releases
 
-The Android workflow builds a debug APK. Install it on a device on the same trusted LAN as the game PC and verify discovery, connection, live data, and command responses.
+All development and repository edits are made directly on **`main`**. The four platform workflows run on pushes to `main` and on pull requests targeting `main`:
 
-### Windows and Linux
+- **Build Fallout London Companion IPA** — macOS/Xcode simulator tests and unsigned IPA packaging.
+- **Build Fallout London Companion Android** — JVM unit tests and debug APK.
+- **Build Fallout London Companion Windows** — JVM tests, MSI and portable EXE.
+- **Build Fallout London Companion Linux** — JVM tests, DEB, RPM, AppImage and Flatpak.
 
-The desktop workflows package the Compose Multiplatform client. Test networking and package installation on the target operating systems; successful compilation alone does not prove runtime behavior.
+### Coordinated release gate
 
-## Verification boundary
+A numbered GitHub Release is created automatically after all four platform workflows succeed for the **same main commit**. The release job:
 
-The implementations provide protocol, data, UI and packaging foundations, but they still require live testing against the target Fallout: London runtime and fresh game captures. In particular:
+1. Confirms that successful iOS, Android, Windows and Linux build runs exist for the same source SHA.
+2. Downloads the eight installable packages.
+3. normalizes the asset names to the version in the root `VERSION` file.
+4. Generates a SHA-256 checksum file.
+5. Publishes one combined release with project-authored notes, package descriptions, installation notes, known limitations and source revision.
 
-- physical-device connection and reconnect behavior;
-- UDP discovery and manual-IP fallback;
-- inventory actions and game-side result reconciliation;
-- quest activation, fast travel and radio commands;
-- local-map rendering and London location coverage;
-- app lifecycle behavior when the game reloads or network changes.
+No autogenerated contributor roll call is included in release notes. Existing legal notices, upstream licenses and required attributions remain in place.
 
-The MAP view plots coordinates exposed by the running game and can display local-map snapshots. It does not currently bundle a hand-authored Fallout: London world map or Bethesda/Team FOLON map artwork.
+The release version format is `major.minor` with a two-digit minor component (for example `1.00`, `1.01`, `1.10`). Update `VERSION` on `main` when intentionally preparing the next release. A version already published is never silently overwritten.
 
-## Assets and credits
+### Release package names
 
-The approved project icon is treated as locked artwork. The Android and desktop CI workflows retrieve the exact source PNG from the original companion repository at a pinned commit; the workflows do not regenerate or recolor it. The SVG artwork and asset provenance are documented in `Documentation/ASSETS.md`.
+For version `X.YY`, the combined release contains:
+
+- `Fallout-London-Companion-X.YY-iOS-unsigned.ipa`
+- `Fallout-London-Companion-X.YY-Android.apk`
+- `Fallout-London-Companion-X.YY-Windows-Installer.msi`
+- `Fallout-London-Companion-X.YY-Windows-Portable.exe`
+- `Fallout-London-Companion-X.YY-Linux-x86_64.AppImage`
+- `Fallout-London-Companion-X.YY-Linux-amd64.deb`
+- `Fallout-London-Companion-X.YY-Linux-x86_64.rpm`
+- `Fallout-London-Companion-X.YY-Linux.flatpak`
+- `SHA256SUMS-X.YY.txt`
+
+The iOS IPA is unsigned and requires a compatible signing/sideloading workflow. The Android APK is a debug build, not a Play Store production release.
+
+### Installation and network safety
+
+- **iOS / iPadOS:** install the unsigned IPA only after signing it with a compatible workflow such as SideStore. Physical-device testing is required. If UDP broadcast discovery is unavailable, use the gaming PC's private LAN IP for manual connection.
+- **Android:** install the debug APK on a device on the same trusted LAN as the game PC.
+- **Windows:** use the MSI installer or portable self-extracting EXE.
+- **Linux:** install the DEB/RPM, run the AppImage, or install the Flatpak bundle with the appropriate package tooling.
+
+Keep the phone/PC on a trusted private network. Do not expose TCP/27000 or UDP/28000 to the public internet.
+
+## Verification boundary and known gaps
+
+The repository contains unit tests, synthetic protocol fixtures and CI build/package checks. These establish only the behavior those tests exercise. They are **not** a substitute for a real Fallout: London session capture.
+
+Still requiring live-game/device validation:
+
+- physical-device discovery, connect, reconnect and game reload behavior;
+- Fallout: London database paths, item IDs, quest structures and radio state;
+- item action RPC arguments and result reconciliation;
+- quest activation, fast travel, radio and other gameplay commands;
+- map marker extraction, coordinate placement and local-map pixel rendering;
+- a curated London world-map basemap;
+- cross-platform feature parity and platform lifecycle behavior.
+
+The app must not invent London geography or mark an RPC action as supported merely because its numeric command ID appears in a Fallout 4 reference.
+
+## Assets, attribution and legal
+
+The approved project icon is treated as locked artwork. Android and desktop CI retrieve the exact PNG from the original companion repository at pinned commit `b2e544f4279ddfbe3184b573de04b4104906f7f3`. See [ASSETS.md](Documentation/ASSETS.md) for asset provenance and boundaries.
+
+Do not commit Bethesda game assets, decompiled proprietary code, private Team FOLON material, private Discord conversations or permission correspondence. Confirm redistribution rights for each third-party asset before including it.
 
 **WITH THANKS TO TEAM FOLON**
 
-Fallout: London is a Team FOLON project. This companion is a separate application and does not imply endorsement or affiliation.
+Fallout: London is a Team FOLON project. Fallout, Pip-Boy and related marks and assets belong to their respective owners. This independent companion does not imply endorsement or affiliation.
