@@ -1,15 +1,13 @@
-# Security policy
+# Security
 
 ## Network exposure
 
-The Pip-Boy companion protocol uses UDP 28000 for PC discovery and TCP 27000 for the data and command stream. The protocol has **no authentication and no encryption**. Anyone who can reach the game service on those ports may be able to read game data and send commands.
-
-Use this app only on a trusted private network. Do not port-forward these ports or expose them to the public internet.
+The Pip-Boy companion protocol (UDP 28000 / TCP 27000) has **no authentication and no encryption**. Anyone who can reach the game on those ports can read its data and send commands. Use this app only on a trusted private network, and never port-forward these ports to the internet.
 
 ## Reporting a vulnerability
 
-Please report security issues privately using GitHub's **Report a vulnerability** option on this repository's Security tab rather than opening a public issue. Include the affected platform, app version, impact, and steps to reproduce. Avoid attaching personal data, private Team FOLON material, or proprietary game assets.
+Please report security issues privately using GitHub's **"Report a vulnerability"** option on the repository's Security tab rather than a public issue. Include the platform, app version, and steps to reproduce.
 
 ## Scope
 
-This project is a client for a local game companion service. Vulnerabilities in Fallout 4, Fallout: London, the Pip-Boy service itself, or third-party sideloading/package tools should be reported to their respective maintainers.
+This project is a client for a local game service. Issues in the game, the Pip-Boy service itself, or sideloading tools should be reported to their respective maintainers.
