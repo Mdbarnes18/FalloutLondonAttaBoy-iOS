@@ -16,8 +16,10 @@ final class ConnectionService {
     private var discoverySource: DispatchSourceRead?
     private var discoverySocket: Int32 = -1
     private var reconnectAttempt = 0
+    private var manualHost: String?
     private var manualDisconnect = false
-    private var lastReceive = Date()\n    private var lastKeepAliveSent = Date()
+    private var lastReceive = Date()
+    private var lastKeepAliveSent = Date()
 
     func discoverAndConnect() {
         queue.async { [weak self] in
