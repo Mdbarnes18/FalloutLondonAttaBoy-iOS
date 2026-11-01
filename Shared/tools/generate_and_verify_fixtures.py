@@ -20,7 +20,7 @@ def data_records(payload):
     def u32(): return struct.unpack("<I", take(4))[0]
     def cstr():
         nonlocal i
-        end = payload.find(b"\\0", i)
+        end = payload.find(bytes([0]), i)
         if end < 0: raise ValueError("unterminated string")
         value = payload[i:end].decode("utf-8")
         i = end + 1
