@@ -43,6 +43,12 @@ struct LondonMapView: View {
                                 Image(uiImage: image)
                                     .resizable().interpolation(.none).scaledToFit()
                                     .frame(maxWidth: .infinity)
+                                    .overlay {
+                                        Image(systemName: "location.north.circle.fill")
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundStyle(PipTheme.amber)
+                                            .shadow(color: .black, radius: 3)
+                                    }
                                     .background(Color.black)
                                 Text("\(map.width) × \(map.height) · \(map.pixels.count) BYTES")
                                     .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
