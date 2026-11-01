@@ -20,9 +20,22 @@ struct LondonMapView: View {
                             Text(state.isLiveData ? "PLAYER POSITION NOT PRESENT IN CURRENT DATABASE" : "CONNECT TO FALLOUT TO READ PLAYER POSITION")
                                 .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         }
-                        Button("REQUEST LOCAL MAP SNAPSHOT") { state.requestLocalMapSnapshot() }
-                            .font(.system(size: 9, weight: .black, design: .monospaced))
-                            .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                        HStack {
+                            Button("REQUEST LOCAL MAP") { state.requestLocalMapSnapshot() }
+                                .font(.system(size: 8, weight: .black, design: .monospaced))
+                                .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                            Button("MARK PLAYER") {
+                                if let position = state.playerPosition {
+                                    state.setCustomMapMarker(x: position.x, y: position.y, local: false)
+                                }
+                            }
+                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                            .buttonStyle(.bordered).tint(PipTheme.amber)
+                            .disabled(state.playerPosition == nil)
+                            Button("CLEAR MARKER") { state.clearCustomMapMarker() }
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .buttonStyle(.bordered).tint(PipTheme.amber)
+                        }
                     }
                     PipPanel(title: "LOCAL MAP SNAPSHOT") {
                         if let map = state.localMap, let image = makeImage(map) {
