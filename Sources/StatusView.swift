@@ -2,6 +2,14 @@ import SwiftUI
 
 struct StatusView: View {
     @EnvironmentObject private var state: AttaBoyState
+    @State private var hostAddress = ""
+
+    private var connectionColor: Color {
+        if case .connected = state.connectionState { return PipTheme.amber }
+        if case .failed = state.connectionState { return PipTheme.danger }
+        return PipTheme.muted
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -14,7 +22,9 @@ struct StatusView: View {
                                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                                 .foregroundStyle(PipTheme.pale)
                             Spacer()
-                            if state.isLiveData { Text("LIVE").font(.system(size: 8, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.amber) }
+                            if state.isLiveData {
+                                Text("LIVE").font(.system(size: 8, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.amber)
+                            }
                         }
                         HStack(spacing: 8) {
                             Button("AUTO DISCOVER") { state.discoverGame() }
@@ -62,13 +72,14 @@ struct StatusView: View {
                     }
                     PipPanel(title: "S.P.E.C.I.A.L.") {
                         HStack(spacing: 0) {
-                            ForEach(SpecialStat.all) { stat in
+                            ForEach(Array(SpecialStat.all.enumerated()), id: \.element.id) { index, stat in
+                                let value = state.specialValues.indices.contains(index) ? state.specialValues[index] : stat.value
                                 VStack(spacing: 7) {
                                     Text(stat.name).font(.system(size: 9, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.muted)
-                                    Text("\(state.specialValues.indices.contains(SpecialStat.all.firstIndex(where: { $0.name == stat.name }) ?? -1) ? state.specialValues[SpecialStat.all.firstIndex(where: { $0.name == stat.name }) ?? 0] : stat.value)").font(.system(size: 18, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
+                                    Text("\(value)").font(.system(size: 18, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
                                     HStack(spacing: 2) {
-                                        ForEach(0..<10, id: \.self) { index in
-                                            Rectangle().fill(index < stat.value ? PipTheme.amber : PipTheme.background).frame(height: 4)
+                                        ForEach(0..<10, id: \.self) { tick in
+                                            Rectangle().fill(tick < value ? PipTheme.amber : PipTheme.background).frame(height: 4)
                                         }
                                     }
                                 }
