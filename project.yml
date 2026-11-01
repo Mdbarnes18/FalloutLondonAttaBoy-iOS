@@ -12,7 +12,8 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_CFBundleDisplayName: "Atta-Boy"
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
-    INFOPLIST_KEY_UIUserInterfaceStyle: Dark\n    INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Connect to Fallout: London on your local network to display live Pip-Boy game data."
+    INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+    INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Connect to Fallout: London on your local network to display live Pip-Boy game data."
     SUPPORTS_MACCATALYST: NO
 targets:
   AttaBoy:
