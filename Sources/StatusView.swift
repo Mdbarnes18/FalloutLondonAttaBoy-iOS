@@ -9,12 +9,14 @@ struct StatusView: View {
         if case .failed = state.connectionState { return PipTheme.danger }
         return PipTheme.muted
     }
+    private var hpPercent: Int { state.maxHealth > 0 ? Int(Double(state.health) / Double(state.maxHealth) * 100) : 0 }
+    private var apPercent: Int { state.maxActionPoints > 0 ? Int(Double(state.actionPoints) / Double(state.maxActionPoints) * 100) : 0 }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 15) {
-                    ScreenHeader(title: "STATUS", subtitle: "VAULT-TEC PERSONAL DATA TERMINAL")
+                    ScreenHeader(title: "STATUS", subtitle: "LIVE PLAYER STATUS TERMINAL")
                     PipPanel(title: "GAME LINK") {
                         HStack {
                             Circle().fill(connectionColor).frame(width: 7, height: 7)
@@ -22,9 +24,11 @@ struct StatusView: View {
                                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                                 .foregroundStyle(PipTheme.pale)
                             Spacer()
-                            if state.isLiveData {
-                                Text("LIVE").font(.system(size: 8, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.amber)
-                            }
+                            if state.isLiveData { Text("LIVE").font(.system(size: 8, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.amber) }
+                        }
+                        if !state.serverLanguage.isEmpty || !state.serverVersion.isEmpty {
+                            Text("SERVER \(state.serverVersion) · LANG \(state.serverLanguage)")
+                                .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         }
                         HStack(spacing: 8) {
                             Button("AUTO DISCOVER") { state.discoverGame() }
@@ -36,38 +40,40 @@ struct StatusView: View {
                         }
                         HStack(spacing: 7) {
                             TextField("GAME PC IP ADDRESS", text: $hostAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never).autocorrectionDisabled()
                                 .keyboardType(.decimalPad)
-                                .font(.system(size: 10, design: .monospaced))
-                                .padding(7)
+                                .font(.system(size: 10, design: .monospaced)).padding(7)
                                 .overlay(Rectangle().stroke(PipTheme.amberDim.opacity(0.45)))
                             Button("CONNECT") { state.connectToGame(host: hostAddress) }
                                 .font(.system(size: 8, weight: .black, design: .monospaced))
                                 .buttonStyle(.bordered).tint(PipTheme.amber)
                         }
-                        Text("PHONE AND GAME PC MUST BE ON THE SAME LOCAL NETWORK. ENABLE THE PIP-BOY APP OPTION IN FALLOUT 4 / FALLOUT: LONDON.")
-                            .font(.system(size: 8, design: .monospaced))
-                            .foregroundStyle(PipTheme.muted)
+                        Text("SAME PRIVATE LAN REQUIRED · FALLOUT 4 PIP-BOY COMPANION SERVICE MUST BE ENABLED")
+                            .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                     }
                     PipPanel(title: "VITAL SIGNS") {
                         HStack(spacing: 18) {
                             VStack(alignment: .leading, spacing: 13) {
-                                MeterRow(title: "HEALTH", value: state.health, color: PipTheme.danger)
-                                MeterRow(title: "ACTION POINTS", value: state.actionPoints)
+                                MeterRow(title: "HEALTH · \(state.health)/\(state.maxHealth)", value: hpPercent, color: PipTheme.danger)
+                                MeterRow(title: "ACTION POINTS · \(state.actionPoints)/\(state.maxActionPoints)", value: apPercent)
+                                MeterRow(title: "RADIATION", value: state.radiation)
                             }
                             VStack(spacing: 4) {
                                 Image(systemName: "person.crop.circle").font(.system(size: 42, weight: .ultraLight))
                                 Text("WANDERER").font(.system(size: 8, weight: .bold, design: .monospaced))
-                            }
-                            .foregroundStyle(PipTheme.amberDim)
+                            }.foregroundStyle(PipTheme.amberDim)
                         }
                     }
                     PipPanel(title: "GENERAL") {
                         HStack(spacing: 9) {
-                            ValueTile(label: "CAPS", value: "\(state.caps)", symbol: "sterlingsign.circle")
-                            ValueTile(label: "LEVEL", value: "12", symbol: "arrow.up.circle")
-                            ValueTile(label: "WEIGHT", value: String(format: "%.1f", state.carriedWeight), symbol: "scalemass")
+                            ValueTile(label: "LEVEL", value: "\(state.level)", symbol: "arrow.up.circle")
+                            ValueTile(label: "PERKS", value: "\(state.perkPoints)", symbol: "star.circle")
+                            ValueTile(label: "WEIGHT", value: String(format: "%.1f/%.1f", state.carriedWeight, state.maxWeight), symbol: "scalemass")
+                        }
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("XP PROGRESS · \(Int(state.xpProgress * 100))%")
+                                .font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
+                            ProgressView(value: min(max(state.xpProgress, 0), 1)).tint(PipTheme.amber)
                         }
                     }
                     PipPanel(title: "S.P.E.C.I.A.L.") {
@@ -82,33 +88,21 @@ struct StatusView: View {
                                             Rectangle().fill(tick < value ? PipTheme.amber : PipTheme.background).frame(height: 4)
                                         }
                                     }
-                                }
-                                .frame(maxWidth: .infinity)
+                                }.frame(maxWidth: .infinity)
                             }
                         }
                     }
-                    PipPanel(title: "CURRENT EQUIPMENT") {
-                        equipmentLine("SERVICE RIFLE", detail: "PRIMARY", icon: "scope")
-                        equipmentLine("LEATHER COAT", detail: "APPAREL", icon: "tshirt")
+                    if let status = state.lastActionStatus {
+                        Text(status).font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .foregroundStyle(PipTheme.amber).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    Text(state.isLiveData ? "LIVE GAME DATA RECEIVED · STAT / INVENTORY STREAM" : "AWAITING LIVE GAME DATA · DISPLAY VALUES ARE PLACEHOLDERS")
+                    Text(state.isLiveData ? "VALUES REFRESH FROM THE GAME DATABASE" : "DEMO VALUES ONLY · CONNECT TO LOAD YOUR CHARACTER")
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundStyle(PipTheme.muted)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(16)
+                        .foregroundStyle(PipTheme.muted).multilineTextAlignment(.center)
+                }.padding(16)
             }
             .background(PipTheme.background)
             .toolbar(.hidden, for: .navigationBar)
-        }
-    }
-
-    private func equipmentLine(_ name: String, detail: String, icon: String) -> some View {
-        HStack {
-            Image(systemName: icon).frame(width: 24).foregroundStyle(PipTheme.amberDim)
-            Text(name).font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
-            Spacer()
-            Text(detail).font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(PipTheme.muted)
         }
     }
 }
