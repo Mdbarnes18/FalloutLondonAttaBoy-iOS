@@ -92,6 +92,20 @@ struct StatusView: View {
                             }
                         }
                     }
+                    if !state.limbConditions.isEmpty {
+                        PipPanel(title: "LIMB CONDITION") {
+                            ForEach(state.limbConditions.keys.sorted(), id: \.self) { limb in
+                                MeterRow(title: limb, value: state.limbConditions[limb] ?? 0)
+                            }
+                        }
+                    }
+                    if !state.activeEffects.isEmpty {
+                        PipPanel(title: "ACTIVE EFFECTS") {
+                            ForEach(state.activeEffects, id: \.self) { effect in
+                                Text("· \(effect)").font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.pale)
+                            }
+                        }
+                    }
                     if let status = state.lastActionStatus {
                         Text(status).font(.system(size: 9, weight: .bold, design: .monospaced))
                             .foregroundStyle(PipTheme.amber).frame(maxWidth: .infinity, alignment: .leading)
