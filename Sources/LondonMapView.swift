@@ -17,9 +17,9 @@ struct LondonMapView: View {
         }
         guard !coordinates.isEmpty else { return nil }
 
-        let minX = coordinates.map(\.0).min() ?? 0
+        let minX = coordinates.map { $0.0 }.min() ?? 0
         let maxX = coordinates.map(\.0).max() ?? 0
-        let minY = coordinates.map(\.1).min() ?? 0
+        let minY = coordinates.map { $0.1 }.min() ?? 0
         let maxY = coordinates.map(\.1).max() ?? 0
         let spanX = max(maxX - minX, 100)
         let spanY = max(maxY - minY, 100)
