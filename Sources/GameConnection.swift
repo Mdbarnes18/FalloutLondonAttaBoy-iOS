@@ -17,7 +17,7 @@ final class ConnectionService {
     private var discoverySocket: Int32 = -1
     private var reconnectAttempt = 0
     private var manualDisconnect = false
-    private var lastReceive = Date()
+    private var lastReceive = Date()\n    private var lastKeepAliveSent = Date()
 
     func discoverAndConnect() {
         queue.async { [weak self] in
@@ -257,9 +257,17 @@ final class ConnectionService {
             receiveBuffer.removeSubrange(0..<total)
 
             if type == 0 {
+                // The game expects the client to echo a keep-alive when one arrives.
                 sendFrame(type: 0, payload: Data(), over: tcp)
+                lastKeepAliveSent = Date()
             } else {
                 onUpdate?(PipboyPacketDecoder.decode(type: type, payload: payload))
+                // Match the reference client: after ordinary traffic, send a keep-alive
+                // only when more than two seconds have elapsed since the last one.
+                if Date().timeIntervalSince(lastKeepAliveSent) > 2 {
+                    sendFrame(type: 0, payload: Data(), over: tcp)
+                    lastKeepAliveSent = Date()
+                }
             }
         }
     }
@@ -286,7 +294,6 @@ final class ConnectionService {
                 self.failAndScheduleReconnect("Heartbeat timeout")
                 return
             }
-            self.sendFrame(type: 0, payload: Data(), over: tcp)
         }
         heartbeatTimer = timer
         timer.resume()
