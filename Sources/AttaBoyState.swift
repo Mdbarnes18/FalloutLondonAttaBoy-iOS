@@ -134,6 +134,10 @@ final class AttaBoyState: ObservableObject {
         RadioStation.all.first(where: { $0.id == selectedStationID }) ?? RadioStation.all[0]
     }
     var completedQuestCount: Int { completedQuestIDs.count }
+    var hasPlayerPosition: Bool {
+        if case .some = playerPosition { return true }
+        return false
+    }
 
     var connectionLabel: String {
         switch connectionState {
