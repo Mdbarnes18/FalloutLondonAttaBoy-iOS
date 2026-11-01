@@ -23,7 +23,7 @@ jobs:
       - name: Restore approved app icon
         run: |
           mkdir -p src/main/resources
-          curl -L --fail --retry 3 "https://raw.githubusercontent.com/Mdbarnes18/FalloutLondonCompanion/b2e544f4279ddfbe3184b573de04b4104906f7f3/FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png" -o src/main/resources/app.png
+          cp ../Assets/AppIcon-Original.png src/main/resources/app.png
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
