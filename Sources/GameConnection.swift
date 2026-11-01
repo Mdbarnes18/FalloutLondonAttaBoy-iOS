@@ -26,6 +26,7 @@ final class ConnectionService {
             self.reconnectWork?.cancel()
             self.reconnectWork = nil
             self.reconnectAttempt = 0
+            self.manualHost = nil
             self.startDiscovery()
         }
     }
@@ -37,6 +38,7 @@ final class ConnectionService {
             self.reconnectWork?.cancel()
             self.reconnectWork = nil
             self.reconnectAttempt = 0
+            self.manualHost = host
             self.stopDiscovery()
             self.connectInternal(host: host)
         }
@@ -318,7 +320,8 @@ final class ConnectionService {
         let work = DispatchWorkItem { [weak self] in
             guard let self, !self.manualDisconnect else { return }
             self.reconnectWork = nil
-            self.startDiscovery()
+            if let host = self.manualHost { self.connectInternal(host: host) }
+            else { self.startDiscovery() }
         }
         reconnectWork = work
         queue.asyncAfter(deadline: .now() + delay, execute: work)
