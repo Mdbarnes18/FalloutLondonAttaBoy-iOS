@@ -36,7 +36,7 @@ struct SpecialStat: Identifiable {
 }
 
 enum ItemCategory: String, CaseIterable, Identifiable {
-    case all = "ALL", weapons = "WEAPONS", apparel = "APPAREL", aid = "AID", misc = "MISC"
+    case all = "ALL", weapons = "WEAPONS", apparel = "APPAREL", aid = "AID", misc = "MISC", junk = "JUNK", mods = "MODS", ammo = "AMMO"
     var id: String { rawValue }
 }
 
