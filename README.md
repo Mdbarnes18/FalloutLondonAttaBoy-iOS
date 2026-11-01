@@ -37,7 +37,7 @@ The clients implement the established Pip-Boy companion protocol:
 - Incremental binary database/object graph decoding.
 - JSON RPC command envelope and capability-gated gameplay actions.
 
-See `Documentation/PROTOCOL.md` and `Shared/README.md`. Platform-specific networking, lifecycle, UI, audio, haptics and rendering remain native.
+See `Documentation/PROTOCOL.md`, `Documentation/REFERENCE_SOURCES.md` and `Shared/README.md`. Protocol claims are tied to upstream reverse-engineering references; platform-specific networking, lifecycle, UI, audio, haptics and rendering remain native.
 
 ## Build and release
 
