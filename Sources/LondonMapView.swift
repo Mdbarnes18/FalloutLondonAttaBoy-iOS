@@ -165,9 +165,13 @@ struct LondonMapView: View {
             palette.append(UInt8(index))
             palette.append(UInt8(index / 2))
         }
-        let colorSpace = palette.withUnsafeBufferPointer { buffer in
-            CGColorSpaceCreateIndexed(CGColorSpaceCreateDeviceRGB(), 255, buffer.baseAddress!)
-        }
+        guard let colorSpace = palette.withUnsafeBufferPointer({ buffer in
+            CGColorSpace(
+                indexedBaseSpace: CGColorSpaceCreateDeviceRGB(),
+                last: 255,
+                colorTable: buffer.baseAddress!
+            )
+        }) else { return nil }
         guard let cgImage = CGImage(
             width: map.width, height: map.height,
             bitsPerComponent: 8, bitsPerPixel: 8,
