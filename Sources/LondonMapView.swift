@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 struct LondonMapView: View {
-    @EnvironmentObject private var state: AttaBoyState
+    @EnvironmentObject private var state: AttaBoyState\n    @State private var showingTravelConfirm = false\n    @State private var selectedTravelLocation: LiveMapLocation?
 
     var body: some View {
         NavigationStack {
@@ -50,6 +50,28 @@ struct LondonMapView: View {
                         } else {
                             Text("NO LOCAL MAP SNAPSHOT RECEIVED. REQUEST ONE WHILE CONNECTED IN-GAME.")
                                 .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        }
+                    }
+                    if !state.liveMapLocations.isEmpty {
+                        PipPanel(title: "GAME LOCATIONS // \(state.liveMapLocations.count)") {
+                            ForEach(state.liveMapLocations.filter { $0.visible || $0.discovered }) { location in
+                                HStack(spacing: 8) {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(location.name.uppercased())
+                                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                            .foregroundStyle(PipTheme.pale)
+                                        Text("\(location.discovered ? "DISCOVERED" : "UNDISCOVERED") · \(location.cleared ? "CLEARED" : "NOT CLEARED") · X \(Int(location.x)) Y \(Int(location.y))")
+                                            .font(.system(size: 7, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                                    }
+                                    Spacer()
+                                    Button("TRAVEL") {
+                                        selectedTravelLocation = location
+                                        showingTravelConfirm = true
+                                    }
+                                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                                    .buttonStyle(.bordered).tint(PipTheme.amber)
+                                }.padding(.vertical, 5)
+                            }
                         }
                     }
                     PipPanel(title: "LONDON DISTRICT INDEX") {
@@ -100,6 +122,18 @@ struct LondonMapView: View {
             }
             .background(PipTheme.background)
             .toolbar(.hidden, for: .navigationBar)
+            .confirmationDialog(
+                "Fast travel to \(selectedTravelLocation?.name ?? "this location")?",
+                isPresented: $showingTravelConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("FAST TRAVEL", role: .destructive) {
+                    if let selectedTravelLocation { state.fastTravel(to: selectedTravelLocation) }
+                }
+                Button("CANCEL", role: .cancel) { selectedTravelLocation = nil }
+            } message: {
+                Text("The game will move your character. The request is subject to the game's fast-travel rules.")
+            }
         }
     }
 
