@@ -130,8 +130,13 @@ final class ConnectionService {
             }
         }
         guard sent == payload.count else {
+            let socketError = errno
             stopDiscovery()
-            failAndScheduleReconnect("Could not send UDP discovery broadcast")
+            if socketError == EPERM || socketError == EACCES {
+                onStateChange?(.failed("iOS requires Apple's multicast entitlement for UDP broadcast. Enter the PC IP instead."))
+            } else {
+                failAndScheduleReconnect("Could not send UDP discovery broadcast")
+            }
             return
         }
 
