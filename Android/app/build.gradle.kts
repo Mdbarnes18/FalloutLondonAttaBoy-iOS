@@ -16,7 +16,7 @@ android {
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     sourceSets["main"].res.srcDirs("$buildDir/generated/lockedIcon/res")
     tasks.register<Copy>("copyLockedAppIcon") {
-        from(project.file("../../FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png"))
+        from(project.file("../../Assets/AppIcon-Original.png"))
         into(layout.buildDirectory.dir("generated/lockedIcon/res/drawable-nodpi"))
         rename { "app_icon.png" }
     }
