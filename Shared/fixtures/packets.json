@@ -1,0 +1,22 @@
+{
+  "note": "synthetic fixtures; see generate_and_verify_fixtures.py",
+  "cases": [
+    {"name":"bool_true","packetType":3,"payloadHex":"000700000001","expect":"ok","decoded":[["bool",7,true]]},
+    {"name":"int8_negative","packetType":3,"payloadHex":"0101000000fb","expect":"ok","decoded":[["int8",1,-5]]},
+    {"name":"uint8","packetType":3,"payloadHex":"0202000000c8","expect":"ok","decoded":[["uint8",2,200]]},
+    {"name":"int32_negative","packetType":3,"payloadHex":"0303000000c01dfeff","expect":"ok","decoded":[["int32",3,-123456]]},
+    {"name":"uint32_max","packetType":3,"payloadHex":"0404000000ffffffff","expect":"ok","decoded":[["uint32",4,4294967295]]},
+    {"name":"float32","packetType":3,"payloadHex":"05050000000000af42","expect":"ok","decoded":[["float32",5,87.5]]},
+    {"name":"string_utf8","packetType":3,"payloadHex":"06060000005374696d70616b20c2a300","expect":"ok","decoded":[["string",6,"Stimpak £"]]},
+    {"name":"array","packetType":3,"payloadHex":"070900000003000a0000000b0000000c000000","expect":"ok","decoded":[["array",9,[10,11,12]]]},
+    {"name":"object_delta","packetType":3,"payloadHex":"080000000002000a000000706c61796572696e666f000b000000737461747300010063000000","expect":"ok","decoded":[["object",0,[["playerinfo",10],["stats",11]],[99]]]},
+    {"name":"multi_record","packetType":3,"payloadHex":"080000000001000a000000706c61796572696e666f000000080a00000001000b000000637572726870000000050b0000000000af42","expect":"ok","decoded":[["object",0,[["playerinfo",10]],[]],["object",10,[["currhp",11]],[]],["float32",11,87.5]]},
+    {"name":"truncated_tail","packetType":3,"payloadHex":"0007000000010301","expect":"reject","decoded":null},
+    {"name":"unterminated_str","packetType":3,"payloadHex":"0601000000616263","expect":"reject","decoded":null},
+    {"name":"type_9_unknown","packetType":3,"payloadHex":"0907000000","expect":"reject","decoded":null},
+    {"name":"map_2x2","packetType":4,"payloadHex":"0200000002000000000020c1000020410000204100002041000020c1000020c101020304","expect":"ok","decoded":{"width":2,"height":2,"corners":[-10.0,10.0,10.0,10.0,-10.0,-10.0],"pixels":[1,2,3,4]}},
+    {"name":"map_bad_pixels","packetType":4,"payloadHex":"0100000001000000000000000000000000000000000000000000000000000000","expect":"reject","decoded":null},
+    {"name":"map_truncated","packetType":4,"payloadHex":"010203","expect":"reject","decoded":null},
+    {"name":"map_zero_dim","packetType":4,"payloadHex":"0000000005000000000000000000000000000000000000000000000000000000","expect":"reject","decoded":null}
+  ]
+}

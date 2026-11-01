@@ -24,6 +24,8 @@ sealed interface PipboyUpdate {
     data class Data(val records: List<PipboyRecord>) : PipboyUpdate
     data class LocalMap(val map: PipboyLocalMapUpdate) : PipboyUpdate
     data class CommandResponse(val json: String) : PipboyUpdate
+    data class Handshake(val json: String) : PipboyUpdate
+    data object Refused : PipboyUpdate
     data class Unknown(val type: Int, val payload: ByteArray) : PipboyUpdate
 }
 
@@ -55,6 +57,8 @@ sealed interface PipboyValue {
 
 object PipboyPacketDecoder {
     fun decode(type: Int, payload: ByteArray): PipboyUpdate? = when (type) {
+        1 -> PipboyUpdate.Handshake(payload.toString(Charsets.UTF_8))
+        2 -> PipboyUpdate.Refused
         3 -> decodeDataUpdate(payload)?.let(PipboyUpdate::Data)
             ?: PipboyUpdate.Unknown(type, payload)
         4 -> decodeLocalMap(payload)?.let(PipboyUpdate::LocalMap)
@@ -151,6 +155,8 @@ object PipboyPacketDecoder {
             is PipboyUpdate.Data -> update.records.forEach(::apply)
             is PipboyUpdate.LocalMap -> localMap = update.map
             is PipboyUpdate.CommandResponse -> Unit
+            is PipboyUpdate.Handshake -> Unit
+            is PipboyUpdate.Refused -> Unit
             is PipboyUpdate.Unknown -> Unit
         }
     }
@@ -308,10 +314,12 @@ class PipboyConnection {
     private var reconnectJob: Job? = null
     private var manualDisconnect = false
     private var reconnectAttempt = 0
+    @Volatile private var manualHost: String? = null
 
     suspend fun discoverAndConnect() = withContext(Dispatchers.IO) {
         manualDisconnect = false
         reconnectAttempt = 0
+        manualHost = null
         reconnectJob?.cancel()
         discoverOnce()
     }
@@ -319,6 +327,7 @@ class PipboyConnection {
     suspend fun connect(host: String) = withContext(Dispatchers.IO) {
         manualDisconnect = false
         reconnectAttempt = 0
+        manualHost = host
         reconnectJob?.cancel()
         connectOnce(host)
     }
@@ -357,12 +366,11 @@ class PipboyConnection {
                 val packet = DatagramPacket(buffer, buffer.size)
                 udp.receive(packet)
                 val response = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
-                val host = runCatching {
-                    val json = JSONObject(response)
-                    listOf("ip", "host", "address", "gameIP", "gameIp")
-                        .firstNotNullOfOrNull { json.optString(it).takeIf(String::isNotBlank) }
-                }.getOrNull() ?: response.trim().substringBefore(":")
-                require(host.isNotBlank()) { "Unrecognized autodiscovery response" }
+                val json = runCatching { JSONObject(response) }.getOrNull()
+                require(json != null) { "Unrecognized autodiscovery response" }
+                require(!json.optBoolean("IsBusy", false)) { "Fallout is already connected to another companion" }
+                val host = packet.address?.hostAddress
+                require(!host.isNullOrBlank()) { "Autodiscovery reply had no source address" }
                 connectOnce(host)
             }
         }.onFailure { error ->
@@ -436,7 +444,10 @@ class PipboyConnection {
                 runCatching { sendFrame(0, ByteArray(0)) }
                     .onFailure { handleConnectionFailure("Heartbeat response: " + (it.message ?: "failed")) }
             } else {
-                PipboyPacketDecoder.decode(type, payload)?.let { onUpdate?.invoke(it) }
+                PipboyPacketDecoder.decode(type, payload)?.let { update ->
+                    if (update is PipboyUpdate.Refused) onState?.invoke("FAILED: GAME REFUSED COMPANION CONNECTION")
+                    onUpdate?.invoke(update)
+                }
             }
         }
         if (!manualDisconnect) handleConnectionFailure("Connection closed")
@@ -458,7 +469,8 @@ class PipboyConnection {
             delay(delayMs)
             if (!manualDisconnect) {
                 reconnectJob = null
-                discoverOnce()
+                val host = manualHost
+                if (host != null) connectOnce(host) else discoverOnce()
             }
         }
     }

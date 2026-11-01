@@ -28,4 +28,17 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_ALLOWED: NO
     scheme:
-      testTargets: []
+      testTargets:
+        - AttaBoyTests
+  AttaBoyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: AttaBoy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.coagulantchip.attaboy.tests
+        PRODUCT_NAME: AttaBoyTests
+        CODE_SIGNING_ALLOWED: NO

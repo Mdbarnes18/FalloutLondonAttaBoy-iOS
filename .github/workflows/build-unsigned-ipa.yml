@@ -29,6 +29,13 @@ jobs:
         run: brew install xcodegen
       - name: Generate Xcode project
         run: xcodegen generate
+      - name: Verify shared protocol fixtures
+        run: python3 Shared/tools/generate_and_verify_fixtures.py
+      - name: Run iOS unit tests (simulator)
+        continue-on-error: true
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items()) if 'iOS' in k for x in v if 'iPhone' in x['name']))")
+          xcodebuild test -project AttaBoy.xcodeproj -scheme AttaBoy -destination "id=$UDID" -derivedDataPath "$RUNNER_TEMP/AttaBoyTestDerivedData" CODE_SIGNING_ALLOWED=NO
       - name: Build unsigned iOS app
         run: |
           xcodebuild \
