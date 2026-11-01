@@ -351,8 +351,8 @@ final class AttaBoyState: ObservableObject {
 
         database.apply(update)
         switch update {
-        case .data:
-            refreshLiveData()
+        case .data(let data):
+            if !data.records.isEmpty { refreshLiveData() }
         case .localMap(let map):
             localMap = map
         default:
