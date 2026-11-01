@@ -49,3 +49,31 @@ rm -rf Payload
 ## Build output
 
 The workflow creates `AttaBoy-unsigned.ipa` and uploads it as a GitHub Actions artifact. No Apple signing secrets are required for this unsigned build.
+
+
+## Live Fallout: London connection
+
+The iOS client now uses the verified transport and binary database implementation from the main Fallout London Companion project:
+
+- UDP broadcast discovery on port 28000 using the `autodiscover` request.
+- Direct TCP connection to the game host on port 27000.
+- Five-byte little-endian packet framing (UInt32 payload length + message type).
+- Heartbeat handling and automatic rediscovery/reconnect.
+- Binary value, array, and object update decoding into a navigable game-data tree.
+- Live STAT fields mapped from the game database: current HP, current AP, carry weight, and S.P.E.C.I.A.L.
+- Inventory tree parsing for item names, counts, categories, weight, and value.
+- Manual IP connection is available if UDP discovery is blocked.
+
+### Game-side setup
+
+1. Start Fallout 4 / Fallout: London and load into the game world.
+2. Enable **Pip-Boy App** in the game's Gameplay settings (restart the game if the setting was just changed).
+3. Allow the game through the computer's firewall for the local network.
+4. Put the iPhone/iPad and game PC on the same LAN/Wi-Fi.
+5. Open Atta-Boy. It starts autodiscovery automatically; use **AUTO DISCOVER** to retry or enter the PC's LAN IP and tap **CONNECT**.
+
+The iOS app requests local-network access because the companion protocol is LAN-only. The connection is not a cloud service and does not require sending game data to a third party.
+
+### Current live-data boundary
+
+The transport, packet decoder, database graph, STAT values, and inventory parser are connected to the live game stream. The London schematic currently remains a presentation map, and the RADIO / DATA quest screens still contain presentation/demo content; their live game paths and action RPCs are not yet wired into this iOS interface. Item use/equip/drop actions are also not exposed as active controls in this build. These are intentionally not represented as working game actions until their database paths and RPC arguments are verified.
