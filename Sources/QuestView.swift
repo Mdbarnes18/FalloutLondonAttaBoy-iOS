@@ -2,7 +2,15 @@ import SwiftUI
 
 struct QuestView: View {
     @EnvironmentObject private var state: AttaBoyState
-    @State private var expandedQuestID: String?
+    @State private var expandedQuestID: String?\n    @State private var databaseSearch = ""
+
+    private var filteredDatabaseEntries: [LiveDatabaseEntry] {
+        guard !databaseSearch.isEmpty else { return state.databaseEntries }
+        return state.databaseEntries.filter {
+            $0.path.localizedCaseInsensitiveContains(databaseSearch) ||
+            $0.value.localizedCaseInsensitiveContains(databaseSearch)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -75,6 +83,28 @@ struct QuestView: View {
                                         .buttonStyle(.bordered).tint(PipTheme.amber)
                                     }
                                 }
+                            }
+                        }
+                    }
+                    if state.isLiveData {
+                        PipPanel(title: "LIVE DATABASE BROWSER // \(filteredDatabaseEntries.count)") {
+                            TextField("SEARCH PATH OR VALUE", text: $databaseSearch)
+                                .font(.system(size: 9, design: .monospaced))
+                                .padding(8).background(PipTheme.background)
+                                .overlay(Rectangle().stroke(PipTheme.amberDim.opacity(0.5)))
+                                .foregroundStyle(PipTheme.pale)
+                            ForEach(Array(filteredDatabaseEntries.prefix(120))) { entry in
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(entry.path).font(.system(size: 8, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(PipTheme.amberDim)
+                                    Text(entry.value).font(.system(size: 9, design: .monospaced))
+                                        .foregroundStyle(PipTheme.pale).lineLimit(2)
+                                }.frame(maxWidth: .infinity, alignment: .leading)
+                                Rectangle().fill(PipTheme.amberDim.opacity(0.18)).frame(height: 1)
+                            }
+                            if filteredDatabaseEntries.count > 120 {
+                                Text("SHOWING FIRST 120 MATCHES · REFINE SEARCH")
+                                    .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                             }
                         }
                     }
