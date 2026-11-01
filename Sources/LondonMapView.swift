@@ -148,16 +148,31 @@ struct LondonMapView: View {
         guard map.width > 0, map.height > 0,
               map.width <= 4096, map.height <= 4096,
               map.pixels.count == map.width * map.height,
-              let provider = CGDataProvider(data: map.pixels as CFData),
-              let cgImage = CGImage(
-                width: map.width, height: map.height,
-                bitsPerComponent: 8, bitsPerPixel: 8,
-                bytesPerRow: map.width,
-                space: CGColorSpaceCreateDeviceGray(),
-                bitmapInfo: CGBitmapInfo(rawValue: 0),
-                provider: provider, decode: nil,
-                shouldInterpolate: false, intent: .defaultIntent
-              ) else { return nil }
+              let provider = CGDataProvider(data: map.pixels as CFData) else { return nil }
+        // PyPipboyApp's verified palette: R=index/4, G=index, B=index/2.
+        var palette = [UInt8]()
+        palette.reserveCapacity(256 * 3)
+        for index in 0..<256 {
+            palette.append(UInt8(index / 4))
+            palette.append(UInt8(index))
+            palette.append(UInt8(index / 2))
+        }
+        let colorSpace = palette.withUnsafeBufferPointer { buffer in
+            CGColorSpaceCreateIndexed(
+                baseSpace: CGColorSpaceCreateDeviceRGB(),
+                last: 255,
+                colorTable: buffer.baseAddress!
+            )
+        }
+        guard let cgImage = CGImage(
+            width: map.width, height: map.height,
+            bitsPerComponent: 8, bitsPerPixel: 8,
+            bytesPerRow: map.width,
+            space: colorSpace,
+            bitmapInfo: CGBitmapInfo(rawValue: 0),
+            provider: provider, decode: nil,
+            shouldInterpolate: false, intent: .defaultIntent
+        ) else { return nil }
         return UIImage(cgImage: cgImage)
     }
 }
