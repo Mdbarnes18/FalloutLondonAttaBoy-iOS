@@ -92,6 +92,29 @@ struct StatusView: View {
                             }
                         }
                     }
+                    if !state.livePerks.isEmpty {
+                        PipPanel(title: "PERKS // \(state.livePerks.count)") {
+                            ForEach(state.livePerks) { perk in
+                                VStack(alignment: .leading, spacing: 3) {
+                                    HStack {
+                                        Text(perk.name.uppercased())
+                                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                            .foregroundStyle(PipTheme.pale)
+                                        Spacer()
+                                        Text("\(perk.rank)/\(perk.maxRank)")
+                                            .font(.system(size: 8, design: .monospaced))
+                                            .foregroundStyle(PipTheme.amberDim)
+                                    }
+                                    if !perk.nextRankDescription.isEmpty {
+                                        Text(perk.nextRankDescription)
+                                            .font(.system(size: 8, design: .monospaced))
+                                            .foregroundStyle(PipTheme.muted)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
                     PipPanel(title: "MEDICAL") {
                         HStack {
                             Button("STIMPAK") { state.useStimpak() }
