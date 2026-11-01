@@ -1,6 +1,8 @@
 name: Reset release history and stale branches
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       confirm:
@@ -13,10 +15,35 @@ permissions:
 
 jobs:
   reset:
-    if: inputs.confirm == 'RESET'
     runs-on: ubuntu-24.04
     steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check whether reset is authorized and pending
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$CONFIRM" != "RESET" ]]; then
+              echo "Manual reset requires the exact confirmation RESET."
+              echo "reset_needed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          elif [[ ! -f .release-reset-pending ]]; then
+            echo "No release reset is pending."
+            echo "reset_needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "reset_needed=true" >> "$GITHUB_OUTPUT"
+
       - name: Delete all published releases
+        if: steps.gate.outputs.reset_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -29,6 +56,7 @@ jobs:
             done
 
       - name: Delete all release tags
+        if: steps.gate.outputs.reset_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -41,6 +69,7 @@ jobs:
             done
 
       - name: Delete every branch except main
+        if: steps.gate.outputs.reset_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -53,7 +82,8 @@ jobs:
               gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
             done
 
-      - name: Unlock automatic 1.00 release after cleanup
+      - name: Remove the release reset lock from main
+        if: steps.gate.outputs.reset_needed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -61,6 +91,10 @@ jobs:
           set -euo pipefail
           lock_sha="$(gh api "repos/$REPO/contents/.release-reset-pending?ref=main" --jq '.sha')"
           gh api -X DELETE "repos/$REPO/contents/.release-reset-pending" \
-            -f message="Complete release reset; start 1.00 release line" \
+            -f message="Complete release reset; unlock automatic 1.00 release" \
             -f sha="$lock_sha" \
             -f branch=main
+
+      - name: Report reset completion
+        if: steps.gate.outputs.reset_needed == 'true'
+        run: echo "Release history reset. main is the only remaining branch; automatic release publishing is unlocked."
