@@ -9,7 +9,7 @@ final class ConnectionService {
     private let queue = DispatchQueue(label: "com.coagulantchip.attaboy.network")
     private var connection: NWConnection?
     private var receiveBuffer = Data()
-    private var nextRPCID: UInt32 = 1
+    private var nextRPCID: UInt32 = 0
     private var heartbeatTimer: DispatchSourceTimer?
     private var reconnectWork: DispatchWorkItem?
     private var discoveryTimeout: DispatchWorkItem?
@@ -172,7 +172,7 @@ final class ConnectionService {
         }
         guard response["MachineType"] is String else { return }
 
-        var address = sourceAddress.sin_addr
+        let address = sourceAddress.sin_addr
         guard let addressText = inet_ntoa(address) else { return }
         let host = String(cString: addressText)
         stopDiscovery()
