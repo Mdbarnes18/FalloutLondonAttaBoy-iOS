@@ -189,7 +189,7 @@ final class PipboyDatabase {
             while let open = key.firstIndex(of: "[") {
                 let base = String(key[..<open])
                 if !base.isEmpty {
-                    guard let child = nodes[current]?.objectChildren[base] else { return nil }
+                    guard let child = nodes[current]?.objectChildren.first(where: { $0.key.caseInsensitiveCompare(base) == .orderedSame })?.value else { return nil }
                     current = child
                 }
                 guard let close = key.firstIndex(of: "]"),
@@ -200,7 +200,7 @@ final class PipboyDatabase {
                 key = String(key[key.index(after: close)...])
             }
             if !key.isEmpty {
-                guard let child = nodes[current]?.objectChildren[key] else { return nil }
+                guard let child = nodes[current]?.objectChildren.first(where: { $0.key.caseInsensitiveCompare(key) == .orderedSame })?.value else { return nil }
                 current = child
             }
         }
