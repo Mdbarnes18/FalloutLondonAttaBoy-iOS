@@ -255,7 +255,7 @@ final class AttaBoyState: ObservableObject {
     }
     func dropItem(_ item: LiveGameItem, count: Int = 1) {
         guard let handle = item.handleID,
-              let stack = item.stackIDs.first,
+              !item.stackIDs.isEmpty,
               let version = uint32(database.value(at: "inventory.version")) else {
             lastActionStatus = "DROP UNAVAILABLE · GAME IDS NOT PRESENT"
             return
@@ -267,7 +267,7 @@ final class AttaBoyState: ObservableObject {
     func favoriteItem(_ item: LiveGameItem, slot: Int) {
         guard (0...11).contains(slot),
               let handle = item.handleID,
-              let stack = item.stackIDs.first,
+              !item.stackIDs.isEmpty,
               let version = uint32(database.value(at: "inventory.version")) else {
             lastActionStatus = "FAVORITE UNAVAILABLE · GAME IDS NOT PRESENT"
             return
