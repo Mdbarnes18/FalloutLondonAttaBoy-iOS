@@ -4,6 +4,8 @@ enum PipboyUpdate {
     case data(PipboyDataUpdate)
     case localMap(PipboyLocalMapUpdate)
     case commandResponse(PipboyCommandResponse)
+    case connectionAccepted(PipboyHandshake)
+    case connectionRefused
     case unknown(type: UInt8, payload: Data)
 }
 
@@ -22,6 +24,11 @@ struct PipboyLocalMapUpdate {
 
 struct PipboyCommandResponse {
     let json: Any
+}
+
+struct PipboyHandshake {
+    let language: String?
+    let version: String?
 }
 
 enum PipboyRecord {
@@ -44,6 +51,14 @@ enum PipboyValue: Equatable {
 struct PipboyPacketDecoder {
     static func decode(type: UInt8, payload: Data) -> PipboyUpdate {
         switch type {
+        case 1:
+            let object = (try? JSONSerialization.jsonObject(with: payload)) as? [String: Any]
+            return .connectionAccepted(PipboyHandshake(
+                language: object?["lang"] as? String,
+                version: object?["version"] as? String
+            ))
+        case 2:
+            return .connectionRefused
         case 3:
             return .data(PipboyDataUpdate(records: decodeDataUpdate(payload)))
         case 4:
