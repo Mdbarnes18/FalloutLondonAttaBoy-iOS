@@ -360,11 +360,11 @@ final class AttaBoyState: ObservableObject {
         liveInventory = parseInventory()
         liveQuests = parseQuests()
         liveRadioStations = parseRadioStations()
+        isLiveData = true
         if autoStimpakEnabled, maxHealth > 0, health > 0,
            Double(health) / Double(maxHealth) <= autoStimpakThreshold {
             useMedicalItem(objectIDPath: "inventory.stimpakobjectid", validPath: "inventory.stimpakobjectidisvalid")
         }
-        isLiveData = true
     }
 
     private func parseInventory() -> [LiveGameItem] {
