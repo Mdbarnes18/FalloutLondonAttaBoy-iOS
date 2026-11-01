@@ -48,7 +48,7 @@ struct StatusView: View {
                                 .font(.system(size: 8, weight: .black, design: .monospaced))
                                 .buttonStyle(.bordered).tint(PipTheme.amber)
                         }
-                        Text("SAME PRIVATE LAN REQUIRED · ENABLE THE GAME-SIDE PIP-BOY COMPANION SERVICE")
+                        Text("SAME PRIVATE LAN REQUIRED · ENABLE THE GAME-SIDE COMPANION SERVICE. iOS BROADCAST DISCOVERY NEEDS APPLE MULTICAST ENTITLEMENT; MANUAL IP CONNECTION DOES NOT.")
                             .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                     }
                     PipPanel(title: "VITAL SIGNS") {
