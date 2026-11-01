@@ -1,5 +1,9 @@
 # Fallout London Companion
 
+<p align="center">
+  <img src="Assets/AppIcon-Original.png" alt="Original approved ATTA-Boy app icon" width="256">
+</p>
+
 An independent, multi-platform **ATTA-Boy-style companion app** for Fallout 4 / **Fallout: London**. It connects to your game over your home network and shows your Pip-Boy data on a second screen: status, inventory, quests and data, map, and radio.
 
 > **Not affiliated with, endorsed by, or sponsored by Bethesda or Team FOLON.** See [Legal](#legal-and-attribution).
