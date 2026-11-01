@@ -62,6 +62,14 @@ struct LiveMapLocation: Identifiable {
     let markerType: Int
 }
 
+struct LivePerk: Identifiable {
+    let id: Int
+    let name: String
+    let rank: Int
+    let maxRank: Int
+    let nextRankDescription: String
+}
+
 struct LiveDatabaseEntry: Identifiable {
     let path: String
     let value: String
@@ -98,7 +106,7 @@ final class AttaBoyState: ObservableObject {
     @Published var autoStimpakThreshold = UserDefaults.standard.object(forKey: "autoStimpakThreshold") as? Double ?? 0.35
     @Published var liveInventory: [LiveGameItem] = []
     @Published var liveQuests: [LiveGameQuest] = []
-    @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var liveMapLocations: [LiveMapLocation] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
+    @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var liveMapLocations: [LiveMapLocation] = []\n    @Published var livePerks: [LivePerk] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
     @Published var localMap: PipboyLocalMapUpdate?
     @Published var playerPosition: (x: Double, y: Double, rotation: Double)?
     @Published private(set) var isLiveData = false
@@ -375,7 +383,7 @@ final class AttaBoyState: ObservableObject {
         }()
         liveInventory = parseInventory()
         liveQuests = parseQuests()
-        liveRadioStations = parseRadioStations()\n        liveMapLocations = parseMapLocations()
+        liveRadioStations = parseRadioStations()\n        liveMapLocations = parseMapLocations()\n        livePerks = parsePerks()
         isLiveData = true
         if autoStimpakEnabled, maxHealth > 0, health > 0,
            Double(health) / Double(maxHealth) <= autoStimpakThreshold {
@@ -552,6 +560,20 @@ final class AttaBoyState: ObservableObject {
         if let success = object["success"] as? Bool { return success ? "ACTION COMPLETE" : "ACTION FAILED" }
         if let allowed = object["allowed"] as? Bool, !allowed { return "ACTION NOT ALLOWED" }
         return "ACTION RESPONSE RECEIVED"
+    }
+
+    private func parsePerks() -> [LivePerk] {
+        guard let root = database.nodeID(at: "perks") else { return [] }
+        let children = database.arrayChildren(at: root) ?? []
+        return children.enumerated().compactMap { index, _ in
+            let path = "perks[\(index)]"
+            guard bool("\(path).listvisible") ?? false,
+                  let name = string("\(path).name"), !name.isEmpty else { return nil }
+            let rank = integer("\(path).rank", fallback: 0)
+            let maxRank = integer("\(path).maxrank", fallback: 0)
+            let description = rank > 0 ? string("\(path).perks[\(rank - 1)].description") ?? "" : ""
+            return LivePerk(id: index, name: name, rank: rank, maxRank: maxRank, nextRankDescription: description)
+        }
     }
 
     private func parseMapLocations() -> [LiveMapLocation] {
