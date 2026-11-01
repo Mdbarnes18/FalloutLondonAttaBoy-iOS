@@ -387,11 +387,10 @@ final class AttaBoyState: ObservableObject {
     private func parseQuests() -> [LiveGameQuest] {
         guard let root = database.nodeID(at: "quests") else { return [] }
         let objectNodes = database.objectChildren(atNode: root)
-        let entries: [(String, UInt32)] = objectNodes.isEmpty
-            ? (database.arrayChildren(at: root) ?? []).enumerated().map { (String($0.offset), $0.element) }
-            : objectNodes.map { ($0.key, $0.value) }.sorted { $0.0.localizedStandardCompare($1.0) == .orderedAscending }
-        return entries.compactMap { key, nodeID in
-            let path = "quests[\(key)]"
+        let entries: [(String, String)] = objectNodes.isEmpty
+            ? (database.arrayChildren(at: root) ?? []).enumerated().map { (String($0.offset), "quests[\($0.offset)]") }
+            : objectNodes.keys.sorted().map { ($0, "quests.\($0)") }
+        return entries.compactMap { key, path in
             let title = string("\(path).text") ?? string("\(path).name") ?? key
             let enabled = bool("\(path).enabled") ?? true
             let active = bool("\(path).active") ?? false
@@ -411,11 +410,10 @@ final class AttaBoyState: ObservableObject {
     private func parseObjectives(path: String) -> [LiveQuestObjective] {
         guard let root = database.nodeID(at: path) else { return [] }
         let objects = database.objectChildren(atNode: root)
-        let entries: [(String, UInt32)] = objects.isEmpty
-            ? (database.arrayChildren(at: root) ?? []).enumerated().map { (String($0.offset), $0.element) }
-            : objects.map { ($0.key, $0.value) }.sorted { $0.0.localizedStandardCompare($1.0) == .orderedAscending }
-        return entries.map { key, _ in
-            let itemPath = "\(path)[\(key)]"
+        let entries: [(String, String)] = objects.isEmpty
+            ? (database.arrayChildren(at: root) ?? []).enumerated().map { (String($0.offset), "\(path)[\($0.offset)]") }
+            : objects.keys.sorted().map { ($0, "\(path).\($0)") }
+        return entries.map { key, itemPath in
             return LiveQuestObjective(
                 id: key,
                 text: string("\(itemPath).text") ?? key,
