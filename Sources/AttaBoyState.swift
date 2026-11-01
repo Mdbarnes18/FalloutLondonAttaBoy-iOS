@@ -163,13 +163,13 @@ final class AttaBoyState: ObservableObject {
     private func parseInventory() -> [LiveGameItem] {
         guard let root = database.nodeID(at: "inventory") else { return [] }
         var result: [LiveGameItem] = []
-        walkInventory(nodeID: root, path: "inventory", inherited: .misc, depth: 0, into: &result)
+        walkInventory(nodeID: root, path: "inventory", inherited: nil, depth: 0, into: &result)
         var unique: [String: LiveGameItem] = [:]
         for item in result { unique[item.id] = item }
         return unique.values.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
-    private func walkInventory(nodeID: UInt32, path: String, inherited: ItemCategory, depth: Int, into result: inout [LiveGameItem]) {
+    private func walkInventory(nodeID: UInt32, path: String, inherited: ItemCategory?, depth: Int, into result: inout [LiveGameItem]) {
         guard depth < 8 else { return }
         let name = stringValue("\(path).text") ?? stringValue("\(path).name")
         if let name, !name.isEmpty {
