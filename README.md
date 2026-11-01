@@ -33,7 +33,7 @@ The artifact is unsigned. The build does not contain an Apple signing identity o
 - STAT: HP/AP, radiation, carry weight, level, XP progress, perk points, SPECIAL, limb condition, active effects when present in the stream.
 - INV: live item list, categories, count, weight, value, favorite/equipped/legendary indicators, and available item metadata.
 - DATA: live quests and objectives, quest marker activation, and searchable flattened database values.
-- MAP: player world coordinates, discovered/visible/cleared location records, confirmed fast-travel action, custom marker controls, and local-map snapshot request/viewer.
+- MAP: live player world coordinates, a coordinate plot of game-provided discovered/visible locations, fast-travel confirmation, custom marker controls, and the local-map snapshot viewer with the player marker transformed from the snapshot's world-coordinate corners.
 - RADIO: live station name/frequency/range/active state and ToggleRadioStation command.
 - MEDICAL: manual Stimpak/RadAway actions and opt-in Auto-Stimpak using the verified object-ID/handle/stack/version database references.
 
@@ -74,10 +74,10 @@ The following still require physical-device testing against the user's running F
 - Inventory action acceptance and game-side result reconciliation.
 - Quest activation and fast-travel responses in the user's save/runtime.
 - Radio station toggling and local-map image appearance.
-- London-specific world-map artwork, coordinates, quest overlays, and other data that are not verified by the generic Fallout 4 protocol.
+- London-specific map artwork, quest overlays, and location coverage. The world plot uses coordinates supplied by the running game; it is not a hand-authored geographic basemap, and its completeness depends on the location records exposed by the current runtime.
 - Device lifecycle behavior when the app is backgrounded, the game reloads a save, or Wi-Fi changes.
 
-The schematic London district view is still a presentation reference; it is not a complete, georeferenced Fallout: London world map. The local-map viewer uses the protocol's indexed 8-bit pixel format and the palette observed in PyPipboyApp. No Bethesda or Team FOLON map assets are bundled.
+The MAP screen plots live game-provided world coordinates and overlays the player on local-map snapshots using the snapshot's corner coordinates. It does not bundle a hand-authored Fallout: London world-map basemap or Bethesda/Team FOLON map assets; location coverage depends on what the running game exposes.
 
 ## Research references
 
