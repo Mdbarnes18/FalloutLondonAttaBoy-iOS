@@ -94,3 +94,8 @@ The table identifies command names only. Never enable an action solely because i
 - iOS, Android and desktop still require a shared fixture suite built from legally obtained, user-supplied or independently documented packet captures.
 - Handshake validation, busy response handling, malformed-record error reporting, complete map-pixel validation, RPC response correlation, and live reconnect behavior must be verified against the reference implementations and a real game session.
 - Fallout: London paths, item IDs, quest structures, radio state and map coordinates must come from actual London data captures. Fallout 4 examples are not proof of London data shape.
+
+
+## Discovery reply address
+
+The UDP discovery JSON response does not include the game's IP address. Clients must use the source address of the received UDP datagram. A response with `IsBusy: true` means another companion is already attached and must be shown as a connection refusal. iOS sideloaded builds cannot rely on limited broadcast alone because the multicast entitlement is unavailable; the iOS implementation also sends unicast probes to hosts on the local /24.
