@@ -182,7 +182,14 @@ final class AttaBoyState: ObservableObject {
             else if database.nodeID(at: "\(path).currenthpgain") != nil { category = .aid }
             else if database.nodeID(at: "\(path).damage") != nil { category = .weapons }
             else { category = .misc }
-            let rawID = database.value(at: "\(path).handleid").map(String(describing:)) ?? path
+            let rawID: String
+            if case .uint32(let handle) = database.value(at: "\(path).handleid") {
+                rawID = String(handle)
+            } else if case .int32(let handle) = database.value(at: "\(path).handleid"), handle >= 0 {
+                rawID = String(handle)
+            } else {
+                rawID = path
+            }
             result.append(LiveGameItem(id: rawID + category.rawValue, name: name, category: category, count: max(1, count), weight: weight, value: value))
             return
         }
