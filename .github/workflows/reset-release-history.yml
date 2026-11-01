@@ -1,0 +1,66 @@
+name: Reset release history and stale branches
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type RESET to delete all existing GitHub Releases, release tags, and non-main branches"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  reset:
+    if: inputs.confirm == 'RESET'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Delete all published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/releases?per_page=100" --jq '.[].id' |
+            while read -r release_id; do
+              [ -n "$release_id" ] || continue
+              gh api -X DELETE "repos/$REPO/releases/$release_id"
+            done
+
+      - name: Delete all release tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/git/matching-refs/tags/" --jq '.[].ref' |
+            while read -r ref; do
+              [ -n "$ref" ] || continue
+              gh api -X DELETE "repos/$REPO/git/refs/${ref#refs/}"
+            done
+
+      - name: Delete every branch except main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/branches?per_page=100" --jq '.[].name' |
+            while IFS= read -r branch; do
+              [ -n "$branch" ] || continue
+              [ "$branch" = "main" ] && continue
+              gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
+            done
+
+      - name: Unlock automatic 1.00 release after cleanup
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          lock_sha="$(gh api "repos/$REPO/contents/.release-reset-pending?ref=main" --jq '.sha')"
+          gh api -X DELETE "repos/$REPO/contents/.release-reset-pending" \
+            -f message="Complete release reset; start 1.00 release line" \
+            -f sha="$lock_sha" \
+            -f branch=main
