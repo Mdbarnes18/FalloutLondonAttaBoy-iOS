@@ -109,7 +109,7 @@ final class PipboyDatabase {
             for record in data.records { apply(record) }
         case .localMap(let map):
             localMap = map
-        case .commandResponse:
+        case .commandResponse, .connectionAccepted, .connectionRefused:
             break
         case .unknown:
             break
