@@ -121,10 +121,10 @@ struct PipboyPacketDecoder {
                 case 9:
                     records.append(.value(nodeID: nodeID, value: .null))
                 default:
-                    return records
+                    return []
                 }
             } catch {
-                break
+                return []
             }
         }
 
@@ -136,10 +136,13 @@ struct PipboyPacketDecoder {
         do {
             let width = Int(try reader.readUInt32())
             let height = Int(try reader.readUInt32())
+            guard width > 0, height > 0, width <= 4096, height <= 4096 else { return nil }
             let nw = SIMD2<Float>(try reader.readFloat32(), try reader.readFloat32())
             let ne = SIMD2<Float>(try reader.readFloat32(), try reader.readFloat32())
             let sw = SIMD2<Float>(try reader.readFloat32(), try reader.readFloat32())
-            let pixels = try reader.readData(count: reader.remaining)
+            let expectedPixels = width * height
+            guard reader.remaining == expectedPixels else { return nil }
+            let pixels = try reader.readData(count: expectedPixels)
             return PipboyLocalMapUpdate(width: width, height: height, northWest: nw, northEast: ne, southWest: sw, pixels: pixels)
         } catch {
             return nil
