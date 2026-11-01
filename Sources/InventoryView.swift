@@ -1,114 +1,159 @@
 import SwiftUI
 
-private struct InventoryDisplayItem: Identifiable {
+private struct InventoryRow: Identifiable {
     let id: String
     let name: String
-    let detail: String
     let category: ItemCategory
+    let count: Int
     let weight: Double
     let value: Int
-    let symbol: String
+    let detail: String
     let equipped: Bool
-    let live: Bool
+    let favorite: Bool
+    let legendary: Bool
+    let gameItem: LiveGameItem?
 }
 
 struct InventoryView: View {
     @EnvironmentObject private var state: AttaBoyState
     @State private var category: ItemCategory = .all
+    @State private var search = ""
+    @State private var favoriteSlot = 0
+    @State private var selectedItemID: String?
 
-    private var visibleItems: [InventoryDisplayItem] {
-        let items: [InventoryDisplayItem]
+    private var rows: [InventoryRow] {
+        let source: [InventoryRow]
         if state.isLiveData {
-            items = state.liveInventory.map { item in
-                InventoryDisplayItem(
-                    id: item.id,
-                    name: item.name.uppercased(),
-                    detail: "LIVE GAME DATA · COUNT \(item.count)",
-                    category: item.category,
-                    weight: item.weight,
-                    value: item.value,
-                    symbol: symbol(for: item.category),
-                    equipped: false,
-                    live: true
-                )
+            source = state.liveInventory.map { item in
+                InventoryRow(id: item.id, name: item.name, category: item.category,
+                    count: item.count, weight: item.weight, value: item.value,
+                    detail: item.detail ?? "", equipped: item.equipped,
+                    favorite: item.isFavorited, legendary: item.legendary, gameItem: item)
             }
         } else {
-            items = InventoryItem.samples.map { item in
-                InventoryDisplayItem(
-                    id: item.id,
-                    name: item.name,
-                    detail: item.detail,
-                    category: item.category,
-                    weight: item.weight,
-                    value: item.value,
-                    symbol: item.symbol,
-                    equipped: state.equippedItemIDs.contains(item.id),
-                    live: false
-                )
+            source = InventoryItem.samples.map { item in
+                InventoryRow(id: item.id, name: item.name, category: item.category,
+                    count: 1, weight: item.weight, value: item.value,
+                    detail: item.detail, equipped: state.equippedItemIDs.contains(item.id),
+                    favorite: false, legendary: false, gameItem: nil)
             }
         }
-        return items.filter { category == .all || $0.category == category }
+        return source.filter {
+            (category == .all || $0.category == category) &&
+            (search.isEmpty || $0.name.localizedCaseInsensitiveContains(search))
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
+
+    private var selectedRow: InventoryRow? { rows.first { $0.id == selectedItemID } }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 15) {
-                    ScreenHeader(title: "INVENTORY", subtitle: state.isLiveData ? "LIVE GAME INVENTORY STREAM" : "PERSONAL PROPERTY REGISTER · DEMO")
+                    ScreenHeader(title: "INVENTORY", subtitle: state.isLiveData ? "LIVE GAME INVENTORY" : "DEMO INVENTORY PREVIEW")
                     PipPanel(title: "CARRY WEIGHT") {
                         HStack {
-                            Text(String(format: "%.1f / 180", state.carriedWeight)).font(.system(size: 17, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
+                            Text(String(format: "%.1f / %.1f", state.carriedWeight, state.maxWeight))
+                                .font(.system(size: 17, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
                             Spacer()
                             Text("LB").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         }
-                        MeterRow(title: "CAPACITY", value: Int(state.carriedWeight / 180 * 100))
+                        MeterRow(title: "CAPACITY", value: state.maxWeight > 0 ? Int(state.carriedWeight / state.maxWeight * 100) : 0)
                     }
-                    Picker("Category", selection: $category) {
-                        ForEach(ItemCategory.allCases) { item in
-                            Text(item.rawValue).tag(item)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .tint(PipTheme.amber)
-                    PipPanel(title: "ITEMS // \(visibleItems.count)") {
-                        if visibleItems.isEmpty {
-                            Text(state.isLiveData ? "NO INVENTORY ITEMS RECEIVED YET" : "NO ITEMS IN THIS CATEGORY")
-                                .font(.system(size: 9, design: .monospaced))
-                                .foregroundStyle(PipTheme.muted)
-                        }
-                        ForEach(visibleItems) { item in
-                            HStack(spacing: 12) {
-                                Image(systemName: item.symbol).font(.system(size: 20)).frame(width: 30).foregroundStyle(PipTheme.amberDim)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(item.name).font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
-                                    Text(item.detail).font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
-                                    Text("WT \(String(format: "%.1f", item.weight))  ·  VALUE £\(item.value)").font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.amberDim)
-                                }
-                                Spacer()
-                                if item.live {
-                                    Text("LIVE").font(.system(size: 8, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.amber)
-                                } else if item.category == .weapons || item.category == .apparel {
-                                    Button(item.equipped ? "EQUIPPED" : "EQUIP") {
-                                        if let sample = InventoryItem.samples.first(where: { $0.id == item.id }) {
-                                            state.toggleEquipment(sample)
-                                        }
-                                    }
-                                    .font(.system(size: 8, weight: .black, design: .monospaced))
-                                    .padding(.horizontal, 8).padding(.vertical, 7)
-                                    .background(item.equipped ? PipTheme.amber : PipTheme.panelRaised, in: RoundedRectangle(cornerRadius: 4))
-                                    .foregroundStyle(item.equipped ? PipTheme.background : PipTheme.amber)
-                                }
+                    TextField("SEARCH INVENTORY", text: $search)
+                        .font(.system(size: 10, design: .monospaced)).padding(9)
+                        .background(PipTheme.panel)
+                        .overlay(Rectangle().stroke(PipTheme.amberDim.opacity(0.5)))
+                        .foregroundStyle(PipTheme.pale)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(ItemCategory.allCases) { option in
+                                Button(option.rawValue) { category = option; selectedItemID = nil }
+                                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                    .padding(.horizontal, 9).padding(.vertical, 7)
+                                    .foregroundStyle(category == option ? PipTheme.background : PipTheme.amber)
+                                    .background(category == option ? PipTheme.amber : PipTheme.panel)
+                                    .overlay(Rectangle().stroke(PipTheme.amberDim))
                             }
-                            .padding(.vertical, 7)
-                            if item.id != visibleItems.last?.id { Rectangle().fill(PipTheme.amberDim.opacity(0.25)).frame(height: 1) }
                         }
                     }
-                }
-                .padding(16)
+                    PipPanel(title: "ITEMS // \(rows.count)") {
+                        if rows.isEmpty {
+                            Text(state.isLiveData ? "NO ITEMS IN THIS CATEGORY" : "CONNECT TO FALLOUT TO LOAD YOUR INVENTORY")
+                                .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        }
+                        ForEach(rows) { row in
+                            Button { selectedItemID = row.id } label: {
+                                HStack(spacing: 9) {
+                                    Image(systemName: symbol(for: row.category))
+                                        .frame(width: 23).foregroundStyle(PipTheme.amberDim)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(row.name.uppercased())
+                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                            .foregroundStyle(PipTheme.pale).lineLimit(1)
+                                        Text("\(row.category.rawValue) · x\(row.count) · WT \(String(format: "%.1f", row.weight)) · £\(row.value)")
+                                            .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                                    }
+                                    Spacer()
+                                    if row.equipped { Text("E").foregroundStyle(PipTheme.amber) }
+                                    if row.favorite { Text("★").foregroundStyle(PipTheme.amber) }
+                                    if row.legendary { Text("L").foregroundStyle(PipTheme.amber) }
+                                    Image(systemName: selectedItemID == row.id ? "chevron.down" : "chevron.right")
+                                        .font(.system(size: 8)).foregroundStyle(PipTheme.muted)
+                                }
+                                .padding(.vertical, 7).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    if let row = selectedRow {
+                        PipPanel(title: "ITEM INSPECTOR") {
+                            Text(row.name.uppercased()).font(.system(size: 13, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.pale)
+                            Text(row.detail.isEmpty ? "NO DESCRIPTION PROVIDED" : row.detail)
+                                .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                            Text("COUNT \(row.count) · WEIGHT \(String(format: "%.2f", row.weight)) · VALUE £\(row.value)")
+                                .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.amberDim)
+                            if let item = row.gameItem {
+                                if let damage = item.damage { detailLine("DAMAGE", value: String(format: "%.0f", damage)) }
+                                if let armor = item.armor { detailLine("ARMOR", value: String(format: "%.0f", armor)) }
+                                if let resistance = item.radiationResistance { detailLine("RAD RES", value: String(format: "%.0f", resistance)) }
+                                if let resistance = item.energyResistance { detailLine("ENG RES", value: String(format: "%.0f", resistance)) }
+                                HStack {
+                                    Button("USE") { state.useItem(item) }.disabled(item.handleID == nil || item.stackIDs.isEmpty)
+                                    Button("DROP 1") { state.dropItem(item) }.disabled(item.handleID == nil || item.stackIDs.isEmpty)
+                                }
+                                .font(.system(size: 9, weight: .black, design: .monospaced))
+                                .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                                HStack {
+                                    Picker("FAVORITE SLOT", selection: $favoriteSlot) {
+                                        ForEach(0..<12, id: \.self) { slot in Text("SLOT \(slot + 1)").tag(slot) }
+                                    }.font(.system(size: 8, design: .monospaced))
+                                    Button("SET FAVORITE") { state.favoriteItem(item, slot: favoriteSlot) }
+                                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                        .disabled(item.handleID == nil || item.stackIDs.isEmpty)
+                                }
+                            } else {
+                                Text("PREVIEW ONLY · ACTIONS REQUIRE A LIVE GAME CONNECTION")
+                                    .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                            }
+                            if let status = state.lastActionStatus {
+                                Text(status).font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.amber)
+                            }
+                        }
+                    }
+                }.padding(16)
             }
             .background(PipTheme.background)
             .toolbar(.hidden, for: .navigationBar)
         }
+    }
+
+    private func detailLine(_ title: String, value: String) -> some View {
+        HStack {
+            Text(title).foregroundStyle(PipTheme.muted)
+            Spacer()
+            Text(value).foregroundStyle(PipTheme.pale)
+        }.font(.system(size: 9, design: .monospaced))
     }
 
     private func symbol(for category: ItemCategory) -> String {
@@ -116,6 +161,9 @@ struct InventoryView: View {
         case .weapons: "scope"
         case .apparel: "tshirt"
         case .aid: "cross.case"
+        case .ammo: "circle.grid.2x2"
+        case .junk: "shippingbox"
+        case .mods: "wrench"
         case .misc, .all: "shippingbox"
         }
     }
