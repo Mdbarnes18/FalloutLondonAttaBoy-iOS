@@ -39,10 +39,10 @@ struct QuestView: View {
     }
 
     private var databaseExportText: String {
-        var output = "FALLOUT: LONDON ATTA-BOY DATA EXPORT\\n"
-        output += "Generated from the current live game database\\n"
-        output += "Entries: \\(state.databaseEntries.count)\\n\\n"
-        for entry in state.databaseEntries { output += "\\(entry.path) = \\(entry.value)\\n" }
+        var output = "FALLOUT: LONDON ATTA-BOY DATA EXPORT\n"
+        output += "Generated from the current live game database\n"
+        output += "Entries: \(state.databaseEntries.count)\n\n"
+        for entry in state.databaseEntries { output += "\(entry.path) = \(entry.value)\n" }
         return output
     }
 
@@ -173,7 +173,7 @@ struct QuestView: View {
                         }
                     }
                     if state.isLiveData {
-                        PipPanel(title: "LIVE DATABASE BROWSER // \\(state.databaseEntries.count) VALUES") {
+                        PipPanel(title: "LIVE DATABASE BROWSER // \(state.databaseEntries.count) VALUES") {
                             HStack(spacing: 6) {
                                 Button("COPY ALL") {
                                     UIPasteboard.general.string = databaseExportText
@@ -267,7 +267,7 @@ struct QuestView: View {
             defaultFilename: "Fallout-London-ATTA-Boy-Data.txt"
         ) { result in
             if case .failure(let error) = result {
-                state.lastActionStatus = "DATA EXPORT FAILED · \\(error.localizedDescription)"
+                state.lastActionStatus = "DATA EXPORT FAILED · \(error.localizedDescription)"
             }
         }
     }
