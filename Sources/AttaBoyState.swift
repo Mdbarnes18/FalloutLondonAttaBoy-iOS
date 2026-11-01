@@ -409,6 +409,9 @@ final class AttaBoyState: ObservableObject {
         liveRadioStations = parseRadioStations()
         liveMapLocations = parseMapLocations()
         livePerks = parsePerks()
+        databaseEntries = database.flattenedValues()
+            .map { LiveDatabaseEntry(path: $0.key, value: describe($0.value)) }
+            .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         isLiveData = true
         if autoStimpakEnabled, maxHealth > 0, health > 0,
            Double(health) / Double(maxHealth) <= autoStimpakThreshold {
