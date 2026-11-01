@@ -17,5 +17,6 @@ struct ContentView: View {
             .toolbarBackground(PipTheme.panel, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
         }
+        .task { state.discoverGame() }
     }
 }
