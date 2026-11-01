@@ -51,6 +51,12 @@ struct LiveRadioStation: Identifiable {
     let inRange: Bool
 }
 
+struct LiveDatabaseEntry: Identifiable {
+    let path: String
+    let value: String
+    var id: String { path }
+}
+
 @MainActor
 final class AttaBoyState: ObservableObject {
     @Published var selectedTab: AppTab = .status
@@ -79,7 +85,7 @@ final class AttaBoyState: ObservableObject {
     @Published var lastActionStatus: String?
     @Published var liveInventory: [LiveGameItem] = []
     @Published var liveQuests: [LiveGameQuest] = []
-    @Published var liveRadioStations: [LiveRadioStation] = []
+    @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
     @Published var localMap: PipboyLocalMapUpdate?
     @Published var playerPosition: (x: Double, y: Double, rotation: Double)?
     @Published private(set) var isLiveData = false
@@ -447,6 +453,19 @@ final class AttaBoyState: ObservableObject {
         if let success = object["success"] as? Bool { return success ? "ACTION COMPLETE" : "ACTION FAILED" }
         if let allowed = object["allowed"] as? Bool, !allowed { return "ACTION NOT ALLOWED" }
         return "ACTION RESPONSE RECEIVED"
+    }
+
+    private func describe(_ value: PipboyValue) -> String {
+        switch value {
+        case .null: "null"
+        case .bool(let v): v ? "true" : "false"
+        case .int8(let v): String(v)
+        case .uint8(let v): String(v)
+        case .int32(let v): String(v)
+        case .uint32(let v): String(v)
+        case .float32(let v): String(format: "%.6g", v)
+        case .string(let v): v
+        }
     }
 
     private func string(_ path: String) -> String? {
