@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: unsigned-ipa-main
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build for SideStore
