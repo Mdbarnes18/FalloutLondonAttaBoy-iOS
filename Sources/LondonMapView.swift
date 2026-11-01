@@ -28,7 +28,7 @@ struct LondonMapView: View {
                                 .buttonStyle(.borderedProminent).tint(PipTheme.amber)
                             Button("MARK PLAYER") {
                                 if let position = state.playerPosition {
-                                    state.setCustomMapMarker(x: position.x, y: position.y, local: false)
+                                    state.setCustomMapMarker(x: position.x, y: position.y)
                                 }
                             }
                             .font(.system(size: 8, weight: .bold, design: .monospaced))
