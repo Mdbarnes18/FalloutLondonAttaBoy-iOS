@@ -31,6 +31,13 @@ jobs:
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
+          # During the one-time release-history reset, suppress automatic releases
+          # until the cleanup workflow removes this lock from main.
+          if gh api "repos/$REPO/contents/.release-reset-pending?ref=$SHA" >/dev/null 2>&1; then
+            echo "Release history reset is pending; skipping this build."
+            echo "release_ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           ios_run="$(gh run list --repo "$REPO" --workflow "Build Fallout London Companion IPA" --commit "$SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
           android_run="$(gh run list --repo "$REPO" --workflow "Build Fallout London Companion Android" --commit "$SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
           windows_run="$(gh run list --repo "$REPO" --workflow "Build Fallout London Companion Windows" --commit "$SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
