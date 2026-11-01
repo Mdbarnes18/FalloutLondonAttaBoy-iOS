@@ -1,13 +1,47 @@
 import SwiftUI
+import UIKit
 
 struct LondonMapView: View {
     @EnvironmentObject private var state: AttaBoyState
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 15) {
-                    ScreenHeader(title: "LONDON MAP", subtitle: "REGIONAL CARTOGRAPHIC DATA")
-                    PipPanel(title: "CITY GRID // SCHEMATIC") {
+                    ScreenHeader(title: "LONDON MAP", subtitle: "GAME WORLD POSITION & LOCAL MAP")
+                    PipPanel(title: "PLAYER POSITION") {
+                        if let position = state.playerPosition {
+                            HStack {
+                                coordinate("X", value: position.x)
+                                coordinate("Y", value: position.y)
+                                coordinate("ROT", value: position.rotation)
+                            }
+                        } else {
+                            Text(state.isLiveData ? "PLAYER POSITION NOT PRESENT IN CURRENT DATABASE" : "CONNECT TO FALLOUT TO READ PLAYER POSITION")
+                                .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        }
+                        Button("REQUEST LOCAL MAP SNAPSHOT") { state.requestLocalMapSnapshot() }
+                            .font(.system(size: 9, weight: .black, design: .monospaced))
+                            .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                    }
+                    PipPanel(title: "LOCAL MAP SNAPSHOT") {
+                        if let map = state.localMap, let image = makeImage(map) {
+                            VStack(spacing: 8) {
+                                Image(uiImage: image)
+                                    .resizable().interpolation(.none).scaledToFit()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.black)
+                                Text("\(map.width) × \(map.height) · \(map.pixels.count) BYTES")
+                                    .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                            }
+                        } else {
+                            Text("NO LOCAL MAP SNAPSHOT RECEIVED. REQUEST ONE WHILE CONNECTED IN-GAME.")
+                                .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        }
+                    }
+                    PipPanel(title: "LONDON DISTRICT INDEX") {
+                        Text("SCHEMATIC REFERENCE ONLY · NOT THE GAME'S WORLD MAP")
+                            .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         GeometryReader { proxy in
                             let size = proxy.size
                             ZStack {
@@ -29,15 +63,11 @@ struct LondonMapView: View {
                                     context.stroke(river, with: .color(PipTheme.background), style: StrokeStyle(lineWidth: 5, lineCap: .round))
                                 }
                                 ForEach(District.all) { district in
-                                    Button {
-                                        state.selectDistrict(district)
-                                    } label: {
+                                    Button { state.selectDistrict(district) } label: {
                                         VStack(spacing: 4) {
                                             Image(systemName: state.selectedDistrictID == district.id ? "mappin.and.ellipse" : "circle.fill")
                                                 .font(.system(size: state.selectedDistrictID == district.id ? 23 : 13, weight: .bold))
-                                            Text(district.name)
-                                                .font(.system(size: 8, weight: .black, design: .monospaced))
-                                                .fixedSize()
+                                            Text(district.name).font(.system(size: 8, weight: .black, design: .monospaced)).fixedSize()
                                         }
                                         .foregroundStyle(state.selectedDistrictID == district.id ? PipTheme.pale : PipTheme.amber)
                                         .padding(6)
@@ -48,27 +78,39 @@ struct LondonMapView: View {
                                 }
                             }
                         }
-                        .frame(height: 350)
-                        .clipped()
+                        .frame(height: 300).clipped()
                     }
-                    PipPanel(title: "SELECTED LOCATION") {
-                        HStack {
-                            Image(systemName: "mappin.circle.fill").font(.system(size: 27)).foregroundStyle(PipTheme.amber)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(state.selectedDistrict.name).font(.system(size: 14, weight: .black, design: .monospaced)).foregroundStyle(PipTheme.pale)
-                                Text(state.selectedDistrict.subtitle.uppercased()).font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
-                            }
-                            Spacer()
-                            Text("UNKNOWN").font(.system(size: 8, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.amberDim)
-                        }
+                    if let status = state.lastActionStatus {
+                        Text(status).font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.amber)
                     }
-                    Text("MAP DATA IS A NON-NAVIGATIONAL FAN-MADE SCHEMATIC")
-                        .font(.system(size: 8, weight: .medium, design: .monospaced)).foregroundStyle(PipTheme.muted)
-                }
-                .padding(16)
+                }.padding(16)
             }
             .background(PipTheme.background)
             .toolbar(.hidden, for: .navigationBar)
         }
+    }
+
+    private func coordinate(_ title: String, value: Double) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(.system(size: 8, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.muted)
+            Text(String(format: "%.2f", value)).font(.system(size: 12, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.pale)
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func makeImage(_ map: PipboyLocalMapUpdate) -> UIImage? {
+        guard map.width > 0, map.height > 0,
+              map.width <= 4096, map.height <= 4096,
+              map.pixels.count == map.width * map.height,
+              let provider = CGDataProvider(data: map.pixels as CFData),
+              let cgImage = CGImage(
+                width: map.width, height: map.height,
+                bitsPerComponent: 8, bitsPerPixel: 8,
+                bytesPerRow: map.width,
+                space: CGColorSpaceCreateDeviceGray(),
+                bitmapInfo: CGBitmapInfo(rawValue: 0),
+                provider: provider, decode: nil,
+                shouldInterpolate: false, intent: .defaultIntent
+              ) else { return nil }
+        return UIImage(cgImage: cgImage)
     }
 }
