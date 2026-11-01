@@ -243,8 +243,8 @@ final class AttaBoyState: ObservableObject {
         lastActionStatus = "LOCAL MAP REQUEST SENT"
         click()
     }
-    func setCustomMapMarker(x: Double, y: Double, local: Bool) {
-        connectionService.sendRPC(type: 6, args: [x, y, local])
+    func setCustomMapMarker(x: Double, y: Double) {
+        connectionService.sendRPC(type: 6, args: [x, y, true])
         lastActionStatus = "MAP MARKER REQUEST SENT"
         click()
     }
