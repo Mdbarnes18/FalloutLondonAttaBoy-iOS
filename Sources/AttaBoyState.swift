@@ -136,6 +136,7 @@ final class AttaBoyState: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.connectionState = newState
+                if newState != .connected { self.isLiveData = false }
                 if newState == .connected {
                     self.database.reset()
                     self.isLiveData = false
@@ -473,13 +474,13 @@ final class AttaBoyState: ObservableObject {
     private func categoryFromFilterFlag(_ value: Double?) -> ItemCategory? {
         guard let value else { return nil }
         switch Int(value) {
-        case 2: .weapons
-        case 4: .apparel
-        case 8: .aid
-        case 512, 1024: .junk
-        case 4096: .ammo
-        case 640: .misc
-        default: nil
+        case 2: return .weapons
+        case 4: return .apparel
+        case 8: return .aid
+        case 512, 1024: return .junk
+        case 4096: return .ammo
+        case 640: return .misc
+        default: return nil
         }
     }
 
@@ -491,7 +492,7 @@ final class AttaBoyState: ObservableObject {
             : objectNodes.keys.sorted().map { ($0, "quests.\($0)") }
         return entries.compactMap { key, path in
             let title = string("\(path).text") ?? string("\(path).name") ?? key
-            let enabled = bool("\(path).enabled") ?? true
+            let enabled = bool("\(path).enabled") ?? false
             let active = bool("\(path).active") ?? false
             let objectives = parseObjectives(path: "\(path).objectives")
             return LiveGameQuest(
