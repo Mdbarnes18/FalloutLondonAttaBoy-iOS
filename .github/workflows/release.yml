@@ -31,7 +31,7 @@ jobs:
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if gh api "repos/$REPO/contents/.release-reset-pending?ref=$SHA" >/dev/null 2>&1; then
+          if gh api "repos/$REPO/contents/.release-reset-pending?ref=main" >/dev/null 2>&1; then
             echo "Release history reset is pending; skipping this build."
             echo "release_ready=false" >> "$GITHUB_OUTPUT"
             exit 0
