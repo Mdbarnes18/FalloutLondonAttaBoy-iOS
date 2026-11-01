@@ -1,26 +1,30 @@
 import Foundation
 import Network
+import Darwin
 
 final class ConnectionService {
     var onStateChange: ((ConnectionState) -> Void)?
     var onUpdate: ((PipboyUpdate) -> Void)?
 
+    private let queue = DispatchQueue(label: "com.coagulantchip.attaboy.network")
     private var connection: NWConnection?
-    private let queue = DispatchQueue(label: "com.falloutlondon.attaboy.network")
     private var receiveBuffer = Data()
     private var nextRPCID: UInt32 = 1
     private var heartbeatTimer: DispatchSourceTimer?
     private var reconnectWork: DispatchWorkItem?
+    private var discoveryTimeout: DispatchWorkItem?
+    private var discoverySource: DispatchSourceRead?
+    private var discoverySocket: Int32 = -1
     private var reconnectAttempt = 0
     private var manualDisconnect = false
     private var lastReceive = Date()
-    private var discoveryGeneration = UUID()
 
     func discoverAndConnect() {
         queue.async { [weak self] in
             guard let self else { return }
             self.manualDisconnect = false
             self.reconnectWork?.cancel()
+            self.reconnectWork = nil
             self.reconnectAttempt = 0
             self.startDiscovery()
         }
@@ -28,19 +32,13 @@ final class ConnectionService {
 
     func connect(host: String) {
         queue.async { [weak self] in
-            self?.manualDisconnect = false
-            self?.reconnectWork?.cancel()
-            self?.reconnectAttempt = 0
-            self?.connectInternal(NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: 27000))
-        }
-    }
-
-    func connect(_ endpoint: NWEndpoint) {
-        queue.async { [weak self] in
-            self?.manualDisconnect = false
-            self?.reconnectWork?.cancel()
-            self?.reconnectAttempt = 0
-            self?.connectInternal(endpoint)
+            guard let self else { return }
+            self.manualDisconnect = false
+            self.reconnectWork?.cancel()
+            self.reconnectWork = nil
+            self.reconnectAttempt = 0
+            self.stopDiscovery()
+            self.connectInternal(host: host)
         }
     }
 
@@ -50,6 +48,7 @@ final class ConnectionService {
             self.manualDisconnect = true
             self.reconnectWork?.cancel()
             self.reconnectWork = nil
+            self.stopDiscovery()
             self.stopHeartbeat()
             self.connection?.cancel()
             self.connection = nil
@@ -63,95 +62,131 @@ final class ConnectionService {
             guard let self, let connection = self.connection else { return }
             let payload: [String: Any] = ["id": self.nextRPCID, "type": type, "args": args]
             self.nextRPCID &+= 1
-            guard let json = try? JSONSerialization.data(withJSONObject: payload) else { return }
+            guard JSONSerialization.isValidJSONObject(payload),
+                  let json = try? JSONSerialization.data(withJSONObject: payload) else { return }
             self.sendFrame(type: 5, payload: json, over: connection)
         }
     }
 
     private func startDiscovery() {
         guard !manualDisconnect else { return }
-        reconnectWork?.cancel()
-        reconnectWork = nil
+        stopDiscovery()
+        connection?.cancel()
+        connection = nil
         onStateChange?(.discovering)
 
-        let generation = UUID()
-        discoveryGeneration = generation
+        let fd = Darwin.socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+        guard fd >= 0 else {
+            failAndScheduleReconnect("Could not create UDP discovery socket")
+            return
+        }
 
-        let parameters = NWParameters.udp
-        parameters.allowLocalEndpointReuse = true
-        let udp = NWConnection(host: "255.255.255.255", port: 28000, using: parameters)
-        connection = udp
+        var enabled: Int32 = 1
+        guard Darwin.setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &enabled, socklen_t(MemoryLayout<Int32>.size)) == 0 else {
+            Darwin.close(fd)
+            failAndScheduleReconnect("Could not enable UDP broadcast")
+            return
+        }
 
-        udp.stateUpdateHandler = { [weak self] state in
-            guard let self, self.discoveryGeneration == generation else { return }
-            switch state {
-            case .ready:
-                let payload = Data(#"{"cmd":"autodiscover"}"#.utf8)
-                udp.send(content: payload, completion: .contentProcessed { [weak self] error in
-                    guard let self, self.discoveryGeneration == generation else { return }
-                    if let error {
-                        self.failAndScheduleReconnect(error.localizedDescription)
-                    } else {
-                        self.receiveDiscovery(udp, generation: generation)
-                    }
-                })
-                self.queue.asyncAfter(deadline: .now() + 5) { [weak self, weak udp] in
-                    guard let self, self.discoveryGeneration == generation else { return }
-                    if let udp, self.connection === udp {
-                        udp.cancel()
-                        self.failAndScheduleReconnect("Autodiscovery timed out")
-                    }
-                }
-            case .failed(let error):
-                self.failAndScheduleReconnect(error.localizedDescription)
-            case .cancelled:
-                break
-            default:
-                break
+        var local = sockaddr_in()
+        local.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        local.sin_family = sa_family_t(AF_INET)
+        local.sin_port = 0
+        local.sin_addr = in_addr(s_addr: in_addr_t(0))
+        let bindResult = withUnsafePointer(to: &local) { pointer in
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
             }
         }
-        udp.start(queue: queue)
+        guard bindResult == 0 else {
+            Darwin.close(fd)
+            failAndScheduleReconnect("Could not bind UDP discovery socket")
+            return
+        }
+
+        discoverySocket = fd
+        let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: queue)
+        source.setEventHandler { [weak self] in self?.receiveDiscoveryResponse() }
+        source.setCancelHandler { Darwin.close(fd) }
+        discoverySource = source
+        source.resume()
+
+        var destination = sockaddr_in()
+        destination.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        destination.sin_family = sa_family_t(AF_INET)
+        destination.sin_port = UInt16(28000).bigEndian
+        destination.sin_addr = in_addr(s_addr: inet_addr("255.255.255.255"))
+
+        let payload = Data(#"{"cmd":"autodiscover"}"#.utf8)
+        let sent = payload.withUnsafeBytes { bytes in
+            withUnsafePointer(to: &destination) { pointer in
+                pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                    Darwin.sendto(fd, bytes.baseAddress, bytes.count, 0, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                }
+            }
+        }
+        guard sent == payload.count else {
+            stopDiscovery()
+            failAndScheduleReconnect("Could not send UDP discovery broadcast")
+            return
+        }
+
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, self.discoverySocket == fd else { return }
+            self.stopDiscovery()
+            self.failAndScheduleReconnect("No Fallout game answered UDP discovery on port 28000")
+        }
+        discoveryTimeout = timeout
+        queue.asyncAfter(deadline: .now() + 5, execute: timeout)
     }
 
-    private func receiveDiscovery(_ udp: NWConnection, generation: UUID) {
-        udp.receiveMessage { [weak self] data, _, _, error in
-            guard let self, self.discoveryGeneration == generation else { return }
-            if let error {
-                self.failAndScheduleReconnect(error.localizedDescription)
-                return
-            }
-            guard let data, !data.isEmpty else {
-                self.failAndScheduleReconnect("Empty autodiscovery response")
-                return
-            }
-
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                let candidates = ["ip", "host", "address", "gameIP", "gameIp"]
-                if let host = candidates.compactMap({ json[$0] as? String }).first, !host.isEmpty {
-                    udp.cancel()
-                    connectInternal(NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: 27000))
-                    return
+    private func receiveDiscoveryResponse() {
+        guard discoverySocket >= 0 else { return }
+        var sourceAddress = sockaddr_in()
+        var addressLength = socklen_t(MemoryLayout<sockaddr_in>.size)
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        let received = buffer.withUnsafeMutableBytes { bytes in
+            withUnsafeMutablePointer(to: &sourceAddress) { pointer in
+                pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                    Darwin.recvfrom(discoverySocket, bytes.baseAddress, bytes.count, 0, $0, &addressLength)
                 }
             }
+        }
+        guard received > 0 else { return }
 
-            if let text = String(data: data, encoding: .utf8) {
-                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                let host = trimmed.split(separator: ":").first.map(String.init) ?? ""
-                if !host.isEmpty {
-                    udp.cancel()
-                    connectInternal(NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: 27000))
-                    return
-                }
-            }
+        let data = Data(buffer.prefix(received))
+        guard let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        if response["IsBusy"] as? Bool == true {
+            stopDiscovery()
+            onStateChange?(.failed("Fallout is already connected to another companion"))
+            return
+        }
+        guard response["MachineType"] is String else { return }
 
-            self.failAndScheduleReconnect("Unrecognized autodiscovery response")
+        var address = sourceAddress.sin_addr
+        guard let addressText = inet_ntoa(address) else { return }
+        let host = String(cString: addressText)
+        stopDiscovery()
+        reconnectAttempt = 0
+        connectInternal(host: host)
+    }
+
+    private func stopDiscovery() {
+        discoveryTimeout?.cancel()
+        discoveryTimeout = nil
+        if let source = discoverySource {
+            discoverySource = nil
+            discoverySocket = -1
+            source.cancel()
+        } else if discoverySocket >= 0 {
+            let fd = discoverySocket
+            discoverySocket = -1
+            Darwin.close(fd)
         }
     }
 
-    private func connectInternal(_ endpoint: NWEndpoint) {
+    private func connectInternal(host: String) {
         guard !manualDisconnect else { return }
-        reconnectWork?.cancel()
-        reconnectWork = nil
         stopHeartbeat()
         connection?.cancel()
         receiveBuffer.removeAll(keepingCapacity: true)
@@ -159,18 +194,18 @@ final class ConnectionService {
 
         let parameters = NWParameters.tcp
         parameters.allowLocalEndpointReuse = true
-        let c = NWConnection(to: endpoint, using: parameters)
-        connection = c
+        let tcp = NWConnection(host: NWEndpoint.Host(host), port: 27000, using: parameters)
+        connection = tcp
 
-        c.stateUpdateHandler = { [weak self] state in
-            guard let self else { return }
+        tcp.stateUpdateHandler = { [weak self] state in
+            guard let self, self.connection === tcp else { return }
             switch state {
             case .ready:
                 self.reconnectAttempt = 0
                 self.lastReceive = Date()
                 self.onStateChange?(.connected)
                 self.startHeartbeat()
-                self.receiveLoop(for: c)
+                self.receiveLoop(for: tcp)
             case .waiting:
                 self.onStateChange?(.reconnecting)
             case .failed(let error):
@@ -184,19 +219,19 @@ final class ConnectionService {
                 break
             }
         }
-        c.start(queue: queue)
+        tcp.start(queue: queue)
     }
 
-    private func receiveLoop(for c: NWConnection) {
-        c.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
-            guard let self, self.connection === c else { return }
+    private func receiveLoop(for tcp: NWConnection) {
+        tcp.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
+            guard let self, self.connection === tcp else { return }
             if let data, !data.isEmpty {
                 self.lastReceive = Date()
                 self.receiveBuffer.append(data)
-                self.decodeFrames(using: c)
+                self.decodeFrames(using: tcp)
             }
             if !isComplete && error == nil {
-                self.receiveLoop(for: c)
+                self.receiveLoop(for: tcp)
             } else if !self.manualDisconnect {
                 self.stopHeartbeat()
                 self.scheduleReconnect(reason: error?.localizedDescription ?? "Connection closed")
@@ -204,13 +239,13 @@ final class ConnectionService {
         }
     }
 
-    private func decodeFrames(using c: NWConnection) {
+    private func decodeFrames(using tcp: NWConnection) {
         while receiveBuffer.count >= 5 {
             let size = receiveBuffer.withUnsafeBytes { raw in
                 UInt32(littleEndian: raw.loadUnaligned(as: UInt32.self))
             }
             guard size <= 16 * 1024 * 1024 else {
-                c.cancel()
+                tcp.cancel()
                 failAndScheduleReconnect("Invalid packet size")
                 return
             }
@@ -222,23 +257,21 @@ final class ConnectionService {
             receiveBuffer.removeSubrange(0..<total)
 
             if type == 0 {
-                sendFrame(type: 0, payload: Data(), over: c)
+                sendFrame(type: 0, payload: Data(), over: tcp)
             } else {
                 onUpdate?(PipboyPacketDecoder.decode(type: type, payload: payload))
             }
         }
     }
 
-    private func sendFrame(type: UInt8, payload: Data, over connection: NWConnection) {
+    private func sendFrame(type: UInt8, payload: Data, over tcp: NWConnection) {
         var size = UInt32(payload.count).littleEndian
         var packet = Data(bytes: &size, count: 4)
         packet.append(type)
         packet.append(payload)
-        connection.send(content: packet, completion: .contentProcessed { [weak self] error in
-            guard let self else { return }
-            if let error, !self.manualDisconnect {
-                self.failAndScheduleReconnect(error.localizedDescription)
-            }
+        tcp.send(content: packet, completion: .contentProcessed { [weak self] error in
+            guard let self, let error, !self.manualDisconnect else { return }
+            self.failAndScheduleReconnect(error.localizedDescription)
         })
     }
 
@@ -247,13 +280,13 @@ final class ConnectionService {
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now() + 20, repeating: 20)
         timer.setEventHandler { [weak self] in
-            guard let self, let connection = self.connection, !self.manualDisconnect else { return }
+            guard let self, let tcp = self.connection, !self.manualDisconnect else { return }
             if Date().timeIntervalSince(self.lastReceive) > 60 {
-                connection.cancel()
+                tcp.cancel()
                 self.failAndScheduleReconnect("Heartbeat timeout")
                 return
             }
-            self.sendFrame(type: 0, payload: Data(), over: connection)
+            self.sendFrame(type: 0, payload: Data(), over: tcp)
         }
         heartbeatTimer = timer
         timer.resume()
@@ -273,7 +306,7 @@ final class ConnectionService {
     private func scheduleReconnect(reason: String) {
         guard !manualDisconnect, reconnectWork == nil else { return }
         reconnectAttempt += 1
-        let delaySeconds = min(pow(2.0, Double(min(reconnectAttempt - 1, 5))), 30.0)
+        let delay = min(pow(2.0, Double(min(reconnectAttempt - 1, 5))), 30.0)
         onStateChange?(.reconnecting)
         let work = DispatchWorkItem { [weak self] in
             guard let self, !self.manualDisconnect else { return }
@@ -281,6 +314,6 @@ final class ConnectionService {
             self.startDiscovery()
         }
         reconnectWork = work
-        queue.asyncAfter(deadline: .now() + delaySeconds, execute: work)
+        queue.asyncAfter(deadline: .now() + delay, execute: work)
     }
 }
