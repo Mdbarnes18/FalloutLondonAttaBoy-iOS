@@ -9,7 +9,7 @@ final class ConnectionService {
     private let queue = DispatchQueue(label: "com.coagulantchip.attaboy.network")
     private var connection: NWConnection?
     private var receiveBuffer = Data()
-    private var nextRPCID: UInt32 = 0
+    private var nextRPCID: UInt32 = 1
     private var heartbeatTimer: DispatchSourceTimer?
     private var reconnectWork: DispatchWorkItem?
     private var discoveryTimeout: DispatchWorkItem?
@@ -212,6 +212,7 @@ final class ConnectionService {
             case .ready:
                 self.reconnectAttempt = 0
                 self.lastReceive = Date()
+                self.lastKeepAliveSent = Date()
                 self.onStateChange?(.connected)
                 self.startHeartbeat()
                 self.receiveLoop(for: tcp)
@@ -303,6 +304,11 @@ final class ConnectionService {
                 self.failAndScheduleReconnect("Heartbeat timeout")
                 return
             }
+            // Keep the game-side companion session alive even when the game has
+            // no data changes to send. The reference client sends a heartbeat
+            // on a 20-second cadence.
+            self.sendFrame(type: 0, payload: Data(), over: tcp)
+            self.lastKeepAliveSent = Date()
         }
         heartbeatTimer = timer
         timer.resume()
