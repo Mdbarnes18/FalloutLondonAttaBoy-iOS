@@ -44,11 +44,22 @@ struct LiveGameQuest: Identifiable {
 }
 
 struct LiveRadioStation: Identifiable {
-    let id: Int
+    let id: UInt32
     let name: String
     let frequency: String
     let active: Bool
     let inRange: Bool
+}
+
+struct LiveMapLocation: Identifiable {
+    let id: UInt32
+    let name: String
+    let x: Double
+    let y: Double
+    let discovered: Bool
+    let visible: Bool
+    let cleared: Bool
+    let markerType: Int
 }
 
 struct LiveDatabaseEntry: Identifiable {
@@ -87,7 +98,7 @@ final class AttaBoyState: ObservableObject {
     @Published var autoStimpakThreshold = UserDefaults.standard.object(forKey: "autoStimpakThreshold") as? Double ?? 0.35
     @Published var liveInventory: [LiveGameItem] = []
     @Published var liveQuests: [LiveGameQuest] = []
-    @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
+    @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var liveMapLocations: [LiveMapLocation] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
     @Published var localMap: PipboyLocalMapUpdate?
     @Published var playerPosition: (x: Double, y: Double, rotation: Double)?
     @Published private(set) var isLiveData = false
@@ -198,7 +209,7 @@ final class AttaBoyState: ObservableObject {
         click()
     }
     func toggleLiveRadio(_ station: LiveRadioStation) {
-        connectionService.sendRPC(type: 12, args: [station.id])
+        connectionService.sendRPC(type: 12, args: [Int(station.id)])
         lastActionStatus = "RADIO REQUEST SENT"
         click()
     }
@@ -219,6 +230,11 @@ final class AttaBoyState: ObservableObject {
     func setCustomMapMarker(x: Double, y: Double, local: Bool) {
         connectionService.sendRPC(type: 6, args: [x, y, local])
         lastActionStatus = "MAP MARKER REQUEST SENT"
+        click()
+    }
+    func fastTravel(to location: LiveMapLocation) {
+        connectionService.sendRPC(type: 9, args: [Int(location.id)])
+        lastActionStatus = "FAST TRAVEL REQUEST SENT · WAITING FOR GAME RESPONSE"
         click()
     }
     func clearCustomMapMarker() {
@@ -244,7 +260,7 @@ final class AttaBoyState: ObservableObject {
             lastActionStatus = "DROP UNAVAILABLE · GAME IDS NOT PRESENT"
             return
         }
-        connectionService.sendRPC(type: 1, args: [handle, min(max(1, count), item.count), version, stack])
+        connectionService.sendRPC(type: 1, args: [handle, min(max(1, count), item.count), version, item.stackIDs])
         lastActionStatus = "DROP REQUEST SENT"
         click()
     }
@@ -256,7 +272,7 @@ final class AttaBoyState: ObservableObject {
             lastActionStatus = "FAVORITE UNAVAILABLE · GAME IDS NOT PRESENT"
             return
         }
-        connectionService.sendRPC(type: 2, args: [handle, stack, slot, version])
+        connectionService.sendRPC(type: 2, args: [handle, item.stackIDs, slot, version])
         lastActionStatus = "FAVORITE REQUEST SENT"
         click()
     }
@@ -359,7 +375,7 @@ final class AttaBoyState: ObservableObject {
         }()
         liveInventory = parseInventory()
         liveQuests = parseQuests()
-        liveRadioStations = parseRadioStations()
+        liveRadioStations = parseRadioStations()\n        liveMapLocations = parseMapLocations()
         isLiveData = true
         if autoStimpakEnabled, maxHealth > 0, health > 0,
            Double(health) / Double(maxHealth) <= autoStimpakThreshold {
@@ -516,10 +532,10 @@ final class AttaBoyState: ObservableObject {
     private func parseRadioStations() -> [LiveRadioStation] {
         guard let root = database.nodeID(at: "radio") else { return [] }
         let children = database.arrayChildren(at: root) ?? []
-        return children.enumerated().map { index, _ in
+        return children.enumerated().map { index, nodeID in
             let path = "radio[\(index)]"
             return LiveRadioStation(
-                id: index,
+                id: nodeID,
                 name: string("\(path).text") ?? "STATION \(index + 1)",
                 frequency: string("\(path).frequency") ?? number("\(path).frequency").map { String(format: "%.1f", $0) } ?? "—",
                 active: bool("\(path).active") ?? false,
@@ -536,6 +552,24 @@ final class AttaBoyState: ObservableObject {
         if let success = object["success"] as? Bool { return success ? "ACTION COMPLETE" : "ACTION FAILED" }
         if let allowed = object["allowed"] as? Bool, !allowed { return "ACTION NOT ALLOWED" }
         return "ACTION RESPONSE RECEIVED"
+    }
+
+    private func parseMapLocations() -> [LiveMapLocation] {
+        guard let root = database.nodeID(at: "map.world.locations") else { return [] }
+        let children = database.arrayChildren(at: root) ?? []
+        return children.enumerated().compactMap { index, nodeID in
+            let path = "map.world.locations[\(index)]"
+            guard let x = number("\(path).x"), let y = number("\(path).y") else { return nil }
+            return LiveMapLocation(
+                id: nodeID,
+                name: string("\(path).name") ?? "LOCATION \(index + 1)",
+                x: x, y: y,
+                discovered: bool("\(path).discovered") ?? false,
+                visible: bool("\(path).visible") ?? false,
+                cleared: bool("\(path).clearedstatus") ?? false,
+                markerType: integer("\(path).type", fallback: -1)
+            )
+        }
     }
 
     private func describe(_ value: PipboyValue) -> String {
