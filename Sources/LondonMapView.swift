@@ -233,8 +233,8 @@ struct LondonMapView: View {
         let px = (x - bounds.minX) / width
         let py = 1 - (y - bounds.minY) / height
         return CGPoint(
-            x: min(max(px, 0), 1) * size.width,
-            y: min(max(py, 0), 1) * size.height
+            x: CGFloat(min(max(px, 0), 1)) * size.width,
+            y: CGFloat(min(max(py, 0), 1)) * size.height
         )
     }
 
@@ -248,7 +248,7 @@ struct LondonMapView: View {
         let u = (delta.x * south.y - delta.y * south.x) / determinant
         let v = (east.x * delta.y - east.y * delta.x) / determinant
         guard u.isFinite, v.isFinite, (0...1).contains(u), (0...1).contains(v) else { return nil }
-        return CGPoint(x: u, y: v)
+        return CGPoint(x: CGFloat(u), y: CGFloat(v))
     }
 
     private func makeImage(_ map: PipboyLocalMapUpdate) -> UIImage? {
