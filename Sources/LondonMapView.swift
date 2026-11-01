@@ -2,7 +2,9 @@ import SwiftUI
 import UIKit
 
 struct LondonMapView: View {
-    @EnvironmentObject private var state: AttaBoyState\n    @State private var showingTravelConfirm = false\n    @State private var selectedTravelLocation: LiveMapLocation?
+    @EnvironmentObject private var state: AttaBoyState
+    @State private var showingTravelConfirm = false
+    @State private var selectedTravelLocation: LiveMapLocation?
 
     var body: some View {
         NavigationStack {
