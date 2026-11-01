@@ -83,6 +83,8 @@ final class AttaBoyState: ObservableObject {
     @Published var serverVersion = ""
     @Published var serverLanguage = ""
     @Published var lastActionStatus: String?
+    @Published var autoStimpakEnabled = UserDefaults.standard.object(forKey: "autoStimpakEnabled") as? Bool ?? false
+    @Published var autoStimpakThreshold = UserDefaults.standard.object(forKey: "autoStimpakThreshold") as? Double ?? 0.35
     @Published var liveInventory: [LiveGameItem] = []
     @Published var liveQuests: [LiveGameQuest] = []
     @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
@@ -92,6 +94,8 @@ final class AttaBoyState: ObservableObject {
 
     private let connectionService = ConnectionService()
     private let database = PipboyDatabase()
+    private var lastMedicalUse = Date.distantPast
+    private let medicalCooldown: TimeInterval = 2.0
 
     @Published private(set) var completedQuestIDs: Set<String> {
         didSet { UserDefaults.standard.set(Array(completedQuestIDs), forKey: "completedQuestIDs") }
@@ -257,6 +261,43 @@ final class AttaBoyState: ObservableObject {
         click()
     }
 
+    func setAutoStimpakEnabled(_ enabled: Bool) {
+        autoStimpakEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "autoStimpakEnabled")
+    }
+    func setAutoStimpakThreshold(_ value: Double) {
+        autoStimpakThreshold = min(max(value, 0.10), 0.90)
+        UserDefaults.standard.set(autoStimpakThreshold, forKey: "autoStimpakThreshold")
+    }
+    func useStimpak() {
+        useMedicalItem(objectIDPath: "inventory.stimpakobjectid", validPath: "inventory.stimpakobjectidisvalid", bypassCooldown: true)
+    }
+    func useRadAway() {
+        useMedicalItem(objectIDPath: "inventory.radawayobjectid", validPath: "inventory.radawayobjectidisvalid", bypassCooldown: true)
+    }
+
+    private func useMedicalItem(objectIDPath: String, validPath: String, bypassCooldown: Bool = false) {
+        guard isLiveData else {
+            lastActionStatus = "MEDICAL ACTION REQUIRES LIVE GAME DATA"
+            return
+        }
+        guard bypassCooldown || Date().timeIntervalSince(lastMedicalUse) >= medicalCooldown else { return }
+        guard bool(validPath) == true,
+              let objectID = uint32(database.value(at: objectIDPath)),
+              let handleID = uint32(database.objectValue(atNode: objectID, key: "handleid")),
+              let stackNodeID = database.objectNodeID(atNode: objectID, key: "stackid"),
+              let stackChild = database.arrayChildren(at: stackNodeID)?.first,
+              let stackID = uint32(database.value(atNode: stackChild)),
+              let version = uint32(database.value(at: "inventory.version")) else {
+            lastActionStatus = "ITEM UNAVAILABLE · GAME DID NOT PROVIDE REQUIRED IDS"
+            return
+        }
+        connectionService.sendRPC(type: 0, args: [handleID, stackID, version])
+        lastMedicalUse = Date()
+        lastActionStatus = "MEDICAL ITEM REQUEST SENT"
+        click()
+    }
+
     func click() { AudioServicesPlaySystemSound(1104) }
 
     private func apply(_ update: PipboyUpdate) {
@@ -319,6 +360,10 @@ final class AttaBoyState: ObservableObject {
         liveInventory = parseInventory()
         liveQuests = parseQuests()
         liveRadioStations = parseRadioStations()
+        if autoStimpakEnabled, maxHealth > 0, health > 0,
+           Double(health) / Double(maxHealth) <= autoStimpakThreshold {
+            useMedicalItem(objectIDPath: "inventory.stimpakobjectid", validPath: "inventory.stimpakobjectidisvalid")
+        }
         isLiveData = true
     }
 
