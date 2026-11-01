@@ -13,8 +13,10 @@ dependencies {
     implementation(compose.material3)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.json:json:20250517")
+    testImplementation("junit:junit:4.13.2")
 }
 kotlin { compilerOptions.jvmTarget.set(JvmTarget.JVM_21) }
+tasks.test { useJUnit() }
 compose.desktop {
     application {
         mainClass = "com.falloutlondon.companion.desktop.MainKt"
