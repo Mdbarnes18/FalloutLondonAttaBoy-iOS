@@ -31,7 +31,7 @@ struct LondonMapView: View {
                             }
                             .font(.system(size: 8, weight: .bold, design: .monospaced))
                             .buttonStyle(.bordered).tint(PipTheme.amber)
-                            .disabled(state.playerPosition == nil)
+                            .disabled(!state.hasPlayerPosition)
                             Button("CLEAR MARKER") { state.clearCustomMapMarker() }
                                 .font(.system(size: 8, weight: .bold, design: .monospaced))
                                 .buttonStyle(.bordered).tint(PipTheme.amber)
