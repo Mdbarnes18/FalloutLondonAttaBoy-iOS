@@ -95,7 +95,9 @@ final class AttaBoyState: ObservableObject {
     @Published var xpProgress = 0.0
     @Published var carriedWeight = 34.5
     @Published var maxWeight = 180.0
-    @Published var specialValues = SpecialStat.all.map(\.value)\n    @Published var limbConditions: [String: Int] = [:]\n    @Published var activeEffects: [String] = []
+    @Published var specialValues = SpecialStat.all.map(\.value)
+    @Published var limbConditions: [String: Int] = [:]
+    @Published var activeEffects: [String] = []
 
     @Published var connectionState: ConnectionState = .disconnected
     @Published var connectionHost = ""
@@ -106,7 +108,10 @@ final class AttaBoyState: ObservableObject {
     @Published var autoStimpakThreshold = UserDefaults.standard.object(forKey: "autoStimpakThreshold") as? Double ?? 0.35
     @Published var liveInventory: [LiveGameItem] = []
     @Published var liveQuests: [LiveGameQuest] = []
-    @Published var liveRadioStations: [LiveRadioStation] = []\n    @Published var liveMapLocations: [LiveMapLocation] = []\n    @Published var livePerks: [LivePerk] = []\n    @Published var databaseEntries: [LiveDatabaseEntry] = []
+    @Published var liveRadioStations: [LiveRadioStation] = []
+    @Published var liveMapLocations: [LiveMapLocation] = []
+    @Published var livePerks: [LivePerk] = []
+    @Published var databaseEntries: [LiveDatabaseEntry] = []
     @Published var localMap: PipboyLocalMapUpdate?
     @Published var playerPosition: (x: Double, y: Double, rotation: Double)?
     @Published private(set) var isLiveData = false
@@ -383,7 +388,9 @@ final class AttaBoyState: ObservableObject {
         }()
         liveInventory = parseInventory()
         liveQuests = parseQuests()
-        liveRadioStations = parseRadioStations()\n        liveMapLocations = parseMapLocations()\n        livePerks = parsePerks()
+        liveRadioStations = parseRadioStations()
+        liveMapLocations = parseMapLocations()
+        livePerks = parsePerks()
         isLiveData = true
         if autoStimpakEnabled, maxHealth > 0, health > 0,
            Double(health) / Double(maxHealth) <= autoStimpakThreshold {
