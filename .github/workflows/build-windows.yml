@@ -24,7 +24,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force "src/main/resources" | Out-Null
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Mdbarnes18/FalloutLondonCompanion/b2e544f4279ddfbe3184b573de04b4104906f7f3/FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png" -OutFile "src/main/resources/app.png"
+          Copy-Item ..\Assets\AppIcon-Original.png src/main/resources/app.png
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
