@@ -76,7 +76,7 @@ final class AttaBoyState: ObservableObject {
     @Published var xpProgress = 0.0
     @Published var carriedWeight = 34.5
     @Published var maxWeight = 180.0
-    @Published var specialValues = SpecialStat.all.map(\.value)
+    @Published var specialValues = SpecialStat.all.map(\.value)\n    @Published var limbConditions: [String: Int] = [:]\n    @Published var activeEffects: [String] = []
 
     @Published var connectionState: ConnectionState = .disconnected
     @Published var connectionHost = ""
@@ -298,6 +298,15 @@ final class AttaBoyState: ObservableObject {
         specialValues = (0..<7).map { index in
             integer("special[\(index)].value", fallback: specialValues.indices.contains(index) ? specialValues[index] : 5)
         }
+        limbConditions = [
+            "HEAD": integer("stats.headcondition", fallback: 100),
+            "TORSO": integer("stats.torsocondition", fallback: 100),
+            "LEFT ARM": integer("stats.larmcondition", fallback: 100),
+            "RIGHT ARM": integer("stats.rarmcondition", fallback: 100),
+            "LEFT LEG": integer("stats.llegcondition", fallback: 100),
+            "RIGHT LEG": integer("stats.rlegcondition", fallback: 100)
+        ]
+        activeEffects = parseActiveEffects()
         playerPosition = {
             guard let x = number("map.world.player.x"), let y = number("map.world.player.y") else { return nil }
             return (x, y, number("map.world.player.rotation") ?? 0)
@@ -428,6 +437,30 @@ final class AttaBoyState: ObservableObject {
                 active: bool("\(itemPath).active") ?? false
             )
         }
+    }
+
+    private func parseActiveEffects() -> [String] {
+        guard let sourcesRoot = database.nodeID(at: "stats.activeeffects") else { return [] }
+        let sources = database.arrayChildren(at: sourcesRoot) ?? []
+        var effects: [String] = []
+        for (sourceIndex, _) in sources.enumerated() {
+            let effectsPath = "stats.activeeffects[\(sourceIndex)].effects"
+            guard let effectsRoot = database.nodeID(at: effectsPath) else { continue }
+            for (effectIndex, _) in (database.arrayChildren(at: effectsRoot) ?? []).enumerated() {
+                let path = "\(effectsPath)[\(effectIndex)]"
+                guard bool("\(path).isactive") ?? true else { continue }
+                let name = string("\(path).name") ?? "UNKNOWN EFFECT"
+                let value = number("\(path).value")
+                let percent = bool("\(path).showaspercent") ?? false
+                if let value, value != 0 {
+                    let suffix = percent ? "%" : ""
+                    effects.append("\(name) \(value > 0 ? "+" : "")\(String(format: "%.2f", value))\(suffix)")
+                } else {
+                    effects.append(name)
+                }
+            }
+        }
+        return effects
     }
 
     private func parseRadioStations() -> [LiveRadioStation] {
