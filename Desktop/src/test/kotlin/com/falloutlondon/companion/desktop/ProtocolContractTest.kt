@@ -1,7 +1,6 @@
 package com.falloutlondon.companion.desktop
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,7 +20,7 @@ class ProtocolContractTest {
         assertTrue(payload.contentEquals(decoded.payload))
     }
     @Test fun rejectsTruncatedLocalMapHeader() {
-        assertNull(PipboyPacketDecoder.decode(4, byteArrayOf(1, 2, 3)))
+        assertTrue(PipboyPacketDecoder.decode(4, byteArrayOf(1, 2, 3)) is PipboyUpdate.Unknown)
     }
     @Test fun rejectsTruncatedDataUpdateWithoutApplyingPrefix() {
         val validPrefix = byteArrayOf(0) + u32(7L) + byteArrayOf(1)
@@ -47,5 +46,62 @@ class ProtocolContractTest {
         )))
         assertEquals(PipboyValue.Float32(87.5f), database.value("playerinfo.currhp"))
     }
+    @Test fun decodesHandshakeAndBusyMessages() {
+        assertEquals(PipboyUpdate.Handshake("""{"lang":"en","version":"1.11.0"}"""),
+            PipboyPacketDecoder.decode(1, """{"lang":"en","version":"1.11.0"}""".toByteArray()))
+        assertEquals(PipboyUpdate.Refused, PipboyPacketDecoder.decode(2, ByteArray(0)))
+    }
+
+    @Test fun decodesValidLocalMap() {
+        val payload = u32(2L) + u32(2L) + ByteArray(24) + byteArrayOf(1, 2, 3, 4)
+        val decoded = PipboyPacketDecoder.decode(4, payload)
+        assertTrue(decoded is PipboyUpdate.LocalMap)
+        val map = (decoded as PipboyUpdate.LocalMap).map
+        assertEquals(2, map.width)
+        assertEquals(2, map.height)
+        assertTrue(byteArrayOf(1, 2, 3, 4).contentEquals(map.pixels))
+    }
+
+    @Test fun rejectsLocalMapWithZeroDimension() {
+        assertTrue(PipboyPacketDecoder.decode(4, u32(0L) + u32(5L) + ByteArray(24)) is PipboyUpdate.Unknown)
+    }
+
+    @Test fun rejectsUnterminatedString() {
+        val payload = byteArrayOf(6) + u32(1L) + "abc".toByteArray()
+        assertTrue(PipboyPacketDecoder.decode(3, payload) is PipboyUpdate.Unknown)
+    }
+
+    @Test fun decodesObjectDeltaAdditionsAndRemovals() {
+        val payload = byteArrayOf(8) + u32(0L) + u16(2) +
+            u32(10L) + "playerinfo".toByteArray() + byteArrayOf(0) +
+            u32(11L) + "stats".toByteArray() + byteArrayOf(0) +
+            u16(1) + u32(99L)
+        val decoded = PipboyPacketDecoder.decode(3, payload)
+        assertEquals(
+            PipboyUpdate.Data(listOf(PipboyRecord.Object(0L, listOf("playerinfo" to 10L, "stats" to 11L), listOf(99L)))),
+            decoded
+        )
+    }
+
+    @Test fun objectRemovalDropsKeyFromGraph() {
+        val database = PipboyDatabase()
+        database.apply(PipboyUpdate.Data(listOf(
+            PipboyRecord.Object(0L, listOf("playerinfo" to 10L), emptyList()),
+            PipboyRecord.Object(10L, listOf("currhp" to 11L), emptyList()),
+            PipboyRecord.Value(11L, PipboyValue.Float32(87.5f))
+        )))
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Object(10L, emptyList(), listOf(11L)))))
+        assertEquals(null, database.value("playerinfo.currhp"))
+    }
+
+    @Test fun childMayBeReferencedBeforeItsValueArrives() {
+        val database = PipboyDatabase()
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Object(0L, listOf("x" to 5L), emptyList()))))
+        assertEquals(null, database.value("x"))
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Value(5L, PipboyValue.UInt32(3L)))))
+        assertEquals(PipboyValue.UInt32(3L), database.value("x"))
+    }
+
+    private fun u16(value: Int) = byteArrayOf(value.toByte(), (value shr 8).toByte())
     private fun u32(value: Long) = byteArrayOf(value.toByte(), (value shr 8).toByte(), (value shr 16).toByte(), (value shr 24).toByte())
 }
