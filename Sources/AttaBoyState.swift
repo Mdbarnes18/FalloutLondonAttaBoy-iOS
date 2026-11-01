@@ -142,6 +142,9 @@ final class AttaBoyState: ObservableObject {
                     self.liveInventory = []
                     self.liveQuests = []
                     self.liveRadioStations = []
+                    self.liveMapLocations = []
+                    self.livePerks = []
+                    self.databaseEntries = []
                     self.localMap = nil
                     self.playerPosition = nil
                     self.serverVersion = ""
