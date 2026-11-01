@@ -177,7 +177,7 @@ final class AttaBoyState: ObservableObject {
             let value = Int(numberValue("\(path).value") ?? 0)
             let count = Int(numberValue("\(path).count") ?? numberValue("\(path).quantity") ?? 1)
             let category: ItemCategory
-            if inherited != .all { category = inherited }
+            if let inherited { category = inherited }
             else if database.nodeID(at: "\(path).paperdollsection") != nil { category = .apparel }
             else if database.nodeID(at: "\(path).currenthpgain") != nil { category = .aid }
             else if database.nodeID(at: "\(path).damage") != nil { category = .weapons }
