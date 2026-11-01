@@ -1,0 +1,45 @@
+name: Build Fallout London Companion Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-android:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: Android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Restore approved app icon
+        run: |
+          mkdir -p ../FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset
+          curl -L --fail --retry 3 "https://raw.githubusercontent.com/Mdbarnes18/FalloutLondonCompanion/b2e544f4279ddfbe3184b573de04b4104906f7f3/FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png" -o ../FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --no-daemon
+      - name: Name APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/Fallout London Companion.apk"
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fallout-London-Companion-android-apk
+          path: Android/app/build/outputs/apk/debug/Fallout London Companion.apk
+          if-no-files-found: error
