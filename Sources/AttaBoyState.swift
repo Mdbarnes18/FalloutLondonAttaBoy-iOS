@@ -298,14 +298,15 @@ final class AttaBoyState: ObservableObject {
         specialValues = (0..<7).map { index in
             integer("special[\(index)].value", fallback: specialValues.indices.contains(index) ? specialValues[index] : 5)
         }
-        limbConditions = [
-            "HEAD": integer("stats.headcondition", fallback: 100),
-            "TORSO": integer("stats.torsocondition", fallback: 100),
-            "LEFT ARM": integer("stats.larmcondition", fallback: 100),
-            "RIGHT ARM": integer("stats.rarmcondition", fallback: 100),
-            "LEFT LEG": integer("stats.llegcondition", fallback: 100),
-            "RIGHT LEG": integer("stats.rlegcondition", fallback: 100)
+        let limbValues = [
+            "HEAD": integer("stats.headcondition", fallback: -1),
+            "TORSO": integer("stats.torsocondition", fallback: -1),
+            "LEFT ARM": integer("stats.larmcondition", fallback: -1),
+            "RIGHT ARM": integer("stats.rarmcondition", fallback: -1),
+            "LEFT LEG": integer("stats.llegcondition", fallback: -1),
+            "RIGHT LEG": integer("stats.rlegcondition", fallback: -1)
         ]
+        limbConditions = Dictionary(uniqueKeysWithValues: limbValues.filter { $0.value >= 0 })
         activeEffects = parseActiveEffects()
         playerPosition = {
             guard let x = number("map.world.player.x"), let y = number("map.world.player.y") else { return nil }
