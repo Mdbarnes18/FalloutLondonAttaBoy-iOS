@@ -226,11 +226,13 @@ final class AttaBoyState: ObservableObject {
         click()
     }
     func toggleLiveRadio(_ station: LiveRadioStation) {
+        guard requireLiveConnection("RADIO") else { return }
         connectionService.sendRPC(type: 12, args: [Int(station.id)])
         lastActionStatus = "RADIO REQUEST SENT"
         click()
     }
     func toggleLiveQuest(_ quest: LiveGameQuest) {
+        guard requireLiveConnection("QUEST ACTION") else { return }
         guard let formID = quest.formID, let instance = quest.instance, let type = quest.type else {
             lastActionStatus = "QUEST ACTION UNAVAILABLE · MISSING GAME IDS"
             return
@@ -240,26 +242,31 @@ final class AttaBoyState: ObservableObject {
         click()
     }
     func requestLocalMapSnapshot() {
+        guard requireLiveConnection("LOCAL MAP REQUEST") else { return }
         connectionService.sendRPC(type: 13, args: [])
         lastActionStatus = "LOCAL MAP REQUEST SENT"
         click()
     }
     func setCustomMapMarker(x: Double, y: Double) {
+        guard requireLiveConnection("MAP MARKER") else { return }
         connectionService.sendRPC(type: 6, args: [x, y, true])
         lastActionStatus = "MAP MARKER REQUEST SENT"
         click()
     }
     func fastTravel(to location: LiveMapLocation) {
+        guard requireLiveConnection("FAST TRAVEL") else { return }
         connectionService.sendRPC(type: 9, args: [Int(location.id)])
         lastActionStatus = "FAST TRAVEL REQUEST SENT · WAITING FOR GAME RESPONSE"
         click()
     }
     func clearCustomMapMarker() {
+        guard requireLiveConnection("CLEAR MAP MARKER") else { return }
         connectionService.sendRPC(type: 7, args: [])
         lastActionStatus = "MAP MARKER CLEAR REQUEST SENT"
         click()
     }
     func useItem(_ item: LiveGameItem) {
+        guard requireLiveConnection("USE ITEM") else { return }
         guard let handle = item.handleID,
               let stack = item.stackIDs.first,
               let version = uint32(database.value(at: "inventory.version")) else {
@@ -271,6 +278,7 @@ final class AttaBoyState: ObservableObject {
         click()
     }
     func dropItem(_ item: LiveGameItem, count: Int = 1) {
+        guard requireLiveConnection("DROP ITEM") else { return }
         guard let handle = item.handleID,
               !item.stackIDs.isEmpty,
               let version = uint32(database.value(at: "inventory.version")) else {
@@ -282,6 +290,7 @@ final class AttaBoyState: ObservableObject {
         click()
     }
     func favoriteItem(_ item: LiveGameItem, slot: Int) {
+        guard requireLiveConnection("FAVORITE ITEM") else { return }
         guard (0...11).contains(slot),
               let handle = item.handleID,
               !item.stackIDs.isEmpty,
@@ -309,11 +318,16 @@ final class AttaBoyState: ObservableObject {
         useMedicalItem(objectIDPath: "inventory.radawayobjectid", validPath: "inventory.radawayobjectidisvalid", bypassCooldown: true)
     }
 
-    private func useMedicalItem(objectIDPath: String, validPath: String, bypassCooldown: Bool = false) {
-        guard isLiveData else {
-            lastActionStatus = "MEDICAL ACTION REQUIRES LIVE GAME DATA"
-            return
+    private func requireLiveConnection(_ action: String) -> Bool {
+        guard case .connected = connectionState, isLiveData else {
+            lastActionStatus = "\(action) REQUIRES LIVE GAME DATA"
+            return false
         }
+        return true
+    }
+
+    private func useMedicalItem(objectIDPath: String, validPath: String, bypassCooldown: Bool = false) {
+        guard requireLiveConnection("MEDICAL ACTION") else { return }
         guard bypassCooldown || Date().timeIntervalSince(lastMedicalUse) >= medicalCooldown else { return }
         guard bool(validPath) == true,
               let objectID = uint32(database.value(at: objectIDPath)),
