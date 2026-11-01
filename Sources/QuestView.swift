@@ -2,7 +2,8 @@ import SwiftUI
 
 struct QuestView: View {
     @EnvironmentObject private var state: AttaBoyState
-    @State private var expandedQuestID: String?\n    @State private var databaseSearch = ""
+    @State private var expandedQuestID: String?
+    @State private var databaseSearch = ""
 
     private var filteredDatabaseEntries: [LiveDatabaseEntry] {
         guard !databaseSearch.isEmpty else { return state.databaseEntries }
