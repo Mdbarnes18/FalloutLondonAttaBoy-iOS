@@ -160,12 +160,16 @@ final class PipboyDatabase {
     func value(atNode nodeID: UInt32) -> PipboyValue? { nodes[nodeID]?.value }
 
     func objectValue(atNode nodeID: UInt32, key: String) -> PipboyValue? {
-        guard let childID = nodes[nodeID]?.objectChildren[key] else { return nil }
+        guard let childID = nodes[nodeID]?.objectChildren.first(where: {
+            $0.key.caseInsensitiveCompare(key) == .orderedSame
+        })?.value else { return nil }
         return nodes[childID]?.value
     }
 
     func objectNodeID(atNode nodeID: UInt32, key: String) -> UInt32? {
-        nodes[nodeID]?.objectChildren[key]
+        nodes[nodeID]?.objectChildren.first(where: {
+            $0.key.caseInsensitiveCompare(key) == .orderedSame
+        })?.value
     }
 
     func objectChildren(at path: String = "") -> [String: UInt32] {
