@@ -55,13 +55,16 @@ sealed interface PipboyValue {
 
 object PipboyPacketDecoder {
     fun decode(type: Int, payload: ByteArray): PipboyUpdate? = when (type) {
-        3 -> PipboyUpdate.Data(decodeDataUpdate(payload))
+        3 -> decodeDataUpdate(payload)?.let(PipboyUpdate::Data)
+            ?: PipboyUpdate.Unknown(type, payload)
         4 -> decodeLocalMap(payload)?.let(PipboyUpdate::LocalMap)
+            ?: PipboyUpdate.Unknown(type, payload)
         6 -> PipboyUpdate.CommandResponse(payload.toString(Charsets.UTF_8))
         else -> PipboyUpdate.Unknown(type, payload)
     }
 
-    private fun decodeDataUpdate(bytes: ByteArray): List<PipboyRecord> {
+    // Decode atomically: a malformed tail must never apply a valid-looking prefix.
+    private fun decodeDataUpdate(bytes: ByteArray): List<PipboyRecord>? {
         val input = DataInputStream(ByteArrayInputStream(bytes))
         val records = mutableListOf<PipboyRecord>()
         fun u8() = input.readUnsignedByte()
@@ -71,12 +74,16 @@ object PipboyPacketDecoder {
         fun f32() = Float.fromBits(i32())
         fun cstring(): String {
             val out = ByteArrayOutputStream()
-            while (true) { val b = u8(); if (b == 0) break; out.write(b) }
+            while (true) {
+                val byte = u8()
+                if (byte == 0) break
+                out.write(byte)
+            }
             return out.toByteArray().toString(Charsets.UTF_8)
         }
 
-        while (input.available() > 0) {
-            try {
+        return try {
+            while (input.available() > 0) {
                 when (val type = u8()) {
                     0 -> records += PipboyRecord.Value(u32(), PipboyValue.Bool(u8() != 0))
                     1 -> records += PipboyRecord.Value(u32(), PipboyValue.Int8(u8().toByte()))
@@ -95,27 +102,33 @@ object PipboyPacketDecoder {
                         val removed = List(u16()) { u32() }
                         records += PipboyRecord.Object(id, added, removed)
                     }
-                    9 -> records += PipboyRecord.Value(u32(), PipboyValue.Null)
-                    else -> break
+                    // Type 9 is not in the documented 0–8 baseline. Preserve it as unknown.
+                    else -> return null
                 }
-            } catch (_: Exception) { break }
+            }
+            records
+        } catch (_: Exception) {
+            null
         }
-        return records
     }
 
     private fun decodeLocalMap(bytes: ByteArray): PipboyLocalMapUpdate? = runCatching {
         val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        require(b.remaining() >= 32) { "Truncated local map header" }
         val width = b.int
         val height = b.int
+        require(width in 1..4096 && height in 1..4096) { "Invalid local map dimensions" }
         val nw = b.float to b.float
         val ne = b.float to b.float
         val sw = b.float to b.float
-        val pixels = ByteArray(b.remaining()).also(b::get)
+        val expectedPixels = width.toLong() * height.toLong()
+        require(expectedPixels <= 16_777_216L && b.remaining().toLong() == expectedPixels) {
+            "Local map pixel payload does not match dimensions"
+        }
+        val pixels = ByteArray(expectedPixels.toInt()).also(b::get)
         PipboyLocalMapUpdate(width, height, nw, ne, sw, pixels)
     }.getOrNull()
-}
-
-class PipboyDatabase {
+}class PipboyDatabase {
     data class Node(
         val id: Long,
         var value: PipboyValue? = null,

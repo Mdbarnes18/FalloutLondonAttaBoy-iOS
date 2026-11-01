@@ -33,6 +33,24 @@ class ProtocolContractTest {
         assertNull(PipboyPacketDecoder.decode(4, byteArrayOf(1, 2, 3)))
     }
 
+    @Test fun rejectsTruncatedDataUpdateWithoutApplyingPrefix() {
+        val validPrefix = byteArrayOf(0) + u32(7L) + byteArrayOf(1)
+        val malformed = validPrefix + byteArrayOf(3, 1)
+        val decoded = PipboyPacketDecoder.decode(3, malformed)
+        assertTrue(decoded is PipboyUpdate.Unknown)
+    }
+
+    @Test fun preservesUndocumentedTypeNineAsUnknown() {
+        val decoded = PipboyPacketDecoder.decode(3, byteArrayOf(9) + u32(7L))
+        assertTrue(decoded is PipboyUpdate.Unknown)
+    }
+
+    @Test fun rejectsLocalMapWithMismatchedPixelCount() {
+        val header = u32(1L) + u32(1L) + ByteArray(24)
+        val decoded = PipboyPacketDecoder.decode(4, header)
+        assertTrue(decoded is PipboyUpdate.Unknown)
+    }
+
     @Test fun appliesIncrementalObjectGraphUpdatesToPaths() {
         val database = PipboyDatabase()
         database.apply(PipboyUpdate.Data(listOf(

@@ -60,7 +60,10 @@ struct PipboyPacketDecoder {
         case 2:
             return .connectionRefused
         case 3:
-            return .data(PipboyDataUpdate(records: decodeDataUpdate(payload)))
+            if let records = decodeDataUpdate(payload) {
+                return .data(PipboyDataUpdate(records: records))
+            }
+            return .unknown(type: type, payload: payload)
         case 4:
             if let map = decodeLocalMap(payload) { return .localMap(map) }
             return .unknown(type: type, payload: payload)
@@ -74,7 +77,8 @@ struct PipboyPacketDecoder {
         }
     }
 
-    private static func decodeDataUpdate(_ data: Data) -> [PipboyRecord] {
+    // Decode atomically so a truncated tail cannot partially mutate the live graph.
+    private static func decodeDataUpdate(_ data: Data) -> [PipboyRecord]? {
         var reader = BinaryReader(data: data)
         var records: [PipboyRecord] = []
 
@@ -118,16 +122,14 @@ struct PipboyPacketDecoder {
                     removed.reserveCapacity(removedCount)
                     for _ in 0..<removedCount { removed.append(try reader.readUInt32()) }
                     records.append(.object(nodeID: nodeID, added: added.map { (key: $0.0, nodeID: $0.1) }, removed: removed))
-                case 9:
-                    records.append(.value(nodeID: nodeID, value: .null))
+                // Type 9 is not part of the documented 0–8 baseline.
                 default:
-                    return []
+                    return nil
                 }
             } catch {
-                return []
+                return nil
             }
         }
-
         return records
     }
 
@@ -140,6 +142,8 @@ struct PipboyPacketDecoder {
             let nw = SIMD2<Float>(try reader.readFloat32(), try reader.readFloat32())
             let ne = SIMD2<Float>(try reader.readFloat32(), try reader.readFloat32())
             let sw = SIMD2<Float>(try reader.readFloat32(), try reader.readFloat32())
+            guard nw.x.isFinite, nw.y.isFinite, ne.x.isFinite, ne.y.isFinite,
+                  sw.x.isFinite, sw.y.isFinite else { return nil }
             let expectedPixels = width * height
             guard reader.remaining == expectedPixels else { return nil }
             let pixels = try reader.readData(count: expectedPixels)
@@ -149,7 +153,6 @@ struct PipboyPacketDecoder {
         }
     }
 }
-
 private struct BinaryReader {
     private let data: Data
     private var offset: Int = 0
