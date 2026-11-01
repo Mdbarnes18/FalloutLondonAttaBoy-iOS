@@ -92,6 +92,28 @@ struct StatusView: View {
                             }
                         }
                     }
+                    PipPanel(title: "MEDICAL") {
+                        HStack {
+                            Button("STIMPAK") { state.useStimpak() }
+                            Button("RADAWAY") { state.useRadAway() }
+                        }
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                        Toggle("AUTO-STIMPAK", isOn: Binding(
+                            get: { state.autoStimpakEnabled },
+                            set: { state.setAutoStimpakEnabled($0) }
+                        ))
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .tint(PipTheme.amber)
+                        Text("TRIGGER AT \(Int(state.autoStimpakThreshold * 100))% HP")
+                            .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        Slider(value: Binding(
+                            get: { state.autoStimpakThreshold },
+                            set: { state.setAutoStimpakThreshold($0) }
+                        ), in: 0.10...0.90, step: 0.05).tint(PipTheme.amber)
+                        Text("AUTO USE IS OFF BY DEFAULT. ENABLE IT TO ALLOW THE APP TO USE A STIMPAK WHEN HP FALLS BELOW THE THRESHOLD.")
+                            .font(.system(size: 7, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                    }
                     if !state.limbConditions.isEmpty {
                         PipPanel(title: "LIMB CONDITION") {
                             ForEach(state.limbConditions.keys.sorted(), id: \.self) { limb in
