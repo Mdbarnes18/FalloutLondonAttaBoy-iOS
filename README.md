@@ -28,6 +28,12 @@ The artifact is unsigned. The build does not contain an Apple signing identity o
 - Reconnection after connection loss.
 - Manual IP connection as a direct unicast fallback.
 
+### ATTA-Boy presentation
+
+- Startup sequence with hardware-style initialization and Team FOLON credit.
+- Amber CRT presentation, scanline treatment, and persistent connection/live-data indicator across the main tabs.
+- Adapted from the earlier FalloutLondonCompanion project while preserving the current app's newer live-data and protocol implementation.
+
 ### Live game data
 
 - STAT: HP/AP, radiation, carry weight, level, XP progress, perk points, SPECIAL, limb condition, active effects when present in the stream.
@@ -37,7 +43,7 @@ The artifact is unsigned. The build does not contain an Apple signing identity o
 - RADIO: live station name/frequency/range/active state and ToggleRadioStation command.
 - MEDICAL: manual Stimpak/RadAway actions and opt-in Auto-Stimpak using the verified object-ID/handle/stack/version database references.
 
-The game remains the authority. The app sends commands and displays game updates; it does not locally pretend that an action succeeded. A command response or subsequent game-data update is needed to confirm the result.
+The game remains the authority. Gameplay RPCs are gated until the connection is established and live game data has arrived. The app sends commands and displays game updates; it does not locally pretend that an action succeeded. A command response or subsequent game-data update is needed to confirm the result.
 
 ## iOS networking limitation
 
