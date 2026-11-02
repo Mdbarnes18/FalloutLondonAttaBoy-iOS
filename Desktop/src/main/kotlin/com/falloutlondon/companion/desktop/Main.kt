@@ -49,15 +49,15 @@ fun FalloutLondonApp() {
     var selectedCategory by remember { mutableStateOf(InventoryCategory.WEAPONS) }
     var boot by remember { mutableStateOf("OFF") }
     var connectionState by remember { mutableStateOf("DISCONNECTED") }
-    var demoMode by remember { mutableStateOf(loadDemoMode()) }
     var selectedGame by remember { mutableStateOf(loadSelectedGame()) }
+    var demoMode by remember { mutableStateOf(loadDemoMode(selectedGame)) }
     var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
     var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
     var showingSettings by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
-            loadCachedDatabase(db)
+            loadCachedDatabase(db, selectedGame)
             player = PlayerState.from(db, player)
             inventory.refresh(db)
         }
@@ -77,7 +77,7 @@ fun FalloutLondonApp() {
         connection.onUpdate = { update ->
             scope.launch {
                 db.apply(update)
-                saveCachedDatabase(db)
+                saveCachedDatabase(db, selectedGame)
                 player = PlayerState.from(db, player)
                 inventory.category = selectedCategory
                 inventory.refresh(db)
@@ -130,18 +130,20 @@ fun FalloutLondonApp() {
                             onSelectedGame = { game ->
                                 if (selectedGame != game) {
                                     selectedGame = game; saveSelectedGame(game)
+                                    demoMode = loadDemoMode(game)
                                     scope.launch {
                                         connection.disconnect()
                                         db.reset()
-                                        clearCachedDatabase()
                                         player = PlayerState()
+                                        if (demoMode) loadCachedDatabase(db, selectedGame)
+                                        player = PlayerState.from(db, player)
                                         inventory.refresh(db)
                                         if (!demoMode) runCatching { connection.discoverAndConnect() }
                                     }
                                 }
                             },
                             onDemoMode = { enabled ->
-                                demoMode = enabled; saveDemoMode(enabled)
+                                demoMode = enabled; saveDemoMode(enabled, selectedGame)
                                 if (enabled) { scope.launch { connection.disconnect() }; loadCachedDatabase(db); player = PlayerState.from(db, player); inventory.refresh(db) }
                                 else scope.launch { runCatching { connection.discoverAndConnect() } }
                             },
@@ -713,12 +715,12 @@ private fun format2(value: Float) = String.format("%.2f", value)
 
 private fun loadSelectedGame(): String = prefs.get("selectedGame", "LONDON")
 private fun saveSelectedGame(value: String) { prefs.put("selectedGame", value) }
-private fun loadDemoMode()=prefs.getBoolean("demoMode",false)
-private fun saveDemoMode(v:Boolean){prefs.putBoolean("demoMode",v)}
+private fun loadDemoMode(game: String)=prefs.getBoolean("demoMode_$game",true)
+private fun saveDemoMode(v:Boolean, game: String){prefs.putBoolean("demoMode_$game",v)}
 private fun loadAutoStimpak()=prefs.getBoolean("autoStimpak",true)
 private fun saveAutoStimpak(v:Boolean){prefs.putBoolean("autoStimpak",v)}
 private fun loadAutoStimpakThreshold()=prefs.getDouble("autoStimpakThreshold",0.35)
 private fun saveAutoStimpakThreshold(v:Double){prefs.putDouble("autoStimpakThreshold",v)}
-private fun saveCachedDatabase(db:PipboyDatabase){prefs.put("cache",db.snapshotJson())}
-private fun loadCachedDatabase(db:PipboyDatabase){prefs.get("cache",null)?.let{db.restoreSnapshot(it)}}
-private fun clearCachedDatabase(){prefs.remove("cache")}
+private fun saveCachedDatabase(db:PipboyDatabase, game: String){prefs.put("cache_$game",db.snapshotJson())}
+private fun loadCachedDatabase(db:PipboyDatabase, game: String){prefs.get("cache_$game",null)?.let{db.restoreSnapshot(it)}}
+private fun clearCachedDatabase(game: String){prefs.remove("cache_$game")}
