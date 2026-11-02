@@ -111,7 +111,8 @@ class ProtocolContractTest {
         val export = database.exportText("COMMONWEALTH", "LIVE SESSION")
         assertTrue(export.contains("Game world: COMMONWEALTH"))
         assertTrue(export.contains("Data source: LIVE SESSION"))
-        assertTrue(export.contains("playerinfo.currhp = 87.5"))
+        assertTrue(export.contains("playerinfo.currhp [node=11, type=Float32"))
+        assertTrue(export.contains("= 87.5"))
         assertTrue(export.contains("playerinfo [node=10, type=Object"))
         assertTrue(export.contains("Decoded value paths: 1"))
     }
