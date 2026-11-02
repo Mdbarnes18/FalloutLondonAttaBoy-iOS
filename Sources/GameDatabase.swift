@@ -262,18 +262,20 @@ final class PipboyDatabase {
             guard let current = nodes[id] else { return }
             let type: String
             let valueText: String
-            switch current.value {
-            case .bool(let value): type = "Bool"; valueText = " = \(value)"
-            case .int8(let value): type = "Int8"; valueText = " = \(value)"
-            case .uint8(let value): type = "UInt8"; valueText = " = \(value)"
-            case .int32(let value): type = "Int32"; valueText = " = \(value)"
-            case .uint32(let value): type = "UInt32"; valueText = " = \(value)"
-            case .float32(let value): type = "Float32"; valueText = " = \(value)"
-            case .string(let value):
-                type = "String"
-                valueText = " = " + value.replacingOccurrences(of: "\n", with: "\\n").replacingOccurrences(of: "\r", with: "\\r")
-            case .null: type = "Null"; valueText = " = null"
-            case nil:
+            if let value = current.value {
+                switch value {
+                case .bool(let value): type = "Bool"; valueText = " = \(value)"
+                case .int8(let value): type = "Int8"; valueText = " = \(value)"
+                case .uint8(let value): type = "UInt8"; valueText = " = \(value)"
+                case .int32(let value): type = "Int32"; valueText = " = \(value)"
+                case .uint32(let value): type = "UInt32"; valueText = " = \(value)"
+                case .float32(let value): type = "Float32"; valueText = " = \(value)"
+                case .string(let value):
+                    type = "String"
+                    valueText = " = " + value.replacingOccurrences(of: "\n", with: "\\n").replacingOccurrences(of: "\r", with: "\\r")
+                case .null: type = "Null"; valueText = " = null"
+                }
+            } else {
                 type = current.arrayChildren.isEmpty ? (current.objectChildren.isEmpty ? "Empty" : "Object") : "Array"
                 valueText = ""
             }
