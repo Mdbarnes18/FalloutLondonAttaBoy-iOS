@@ -87,6 +87,7 @@ enum GameWorld: String, CaseIterable, Identifiable {
 @MainActor
 final class AttaBoyState: ObservableObject {
     @Published private(set) var gameWorld: GameWorld = GameWorld(rawValue: UserDefaults.standard.string(forKey: "gameWorld") ?? "") ?? .london
+    @Published private(set) var demoModeEnabled = UserDefaults.standard.object(forKey: "demoMode_FALLOUT_LONDON") as? Bool ?? true
     @Published var selectedTab: AppTab = .status
     @Published var selectedDistrictID = District.all[0].id
     @Published var selectedCategory: ItemCategory = .all
@@ -197,6 +198,7 @@ final class AttaBoyState: ObservableObject {
         guard gameWorld != world else { return }
         gameWorld = world
         UserDefaults.standard.set(world.rawValue, forKey: "gameWorld")
+        demoModeEnabled = UserDefaults.standard.object(forKey: "demoMode_\(world.rawValue)") as? Bool ?? true
         connectionService.disconnect()
         connectionState = .disconnected
         isLiveData = false
@@ -212,7 +214,22 @@ final class AttaBoyState: ObservableObject {
         lastActionStatus = "GAME PROFILE CHANGED · RECONNECT TO THE SELECTED GAME"
     }
 
+    func setDemoModeEnabled(_ enabled: Bool) {
+        demoModeEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "demoMode_\(gameWorld.rawValue)")
+        if enabled {
+            disconnectGame()
+            lastActionStatus = "DEMO MODE ENABLED · LIVE GAME ACTIONS DISABLED"
+        } else {
+            lastActionStatus = "DEMO MODE DISABLED · CONNECT TO THE SELECTED GAME"
+        }
+    }
+
     func discoverGame() {
+        guard !demoModeEnabled else {
+            lastActionStatus = "DISABLE DEMO MODE BEFORE CONNECTING"
+            return
+        }
         connectionService.disconnect()
         connectionService.discoverAndConnect()
     }
