@@ -242,6 +242,70 @@ final class PipboyDatabase {
         }
     }
 
+    func diagnosticExportText(gameWorld: String, dataSource: String, serverVersion: String, serverLanguage: String) -> String {
+        var lines = [
+            "ATTA-BOY DIAGNOSTIC DATA EXPORT",
+            "Generated: \(ISO8601DateFormatter().string(from: Date()))",
+            "Game world: \(gameWorld)",
+            "Data source: \(dataSource)",
+            "Server version: \(serverVersion.isEmpty ? "unknown" : serverVersion)",
+            "Server language: \(serverLanguage.isEmpty ? "unknown" : serverLanguage)",
+            "Database nodes: \(nodes.count)",
+            "Decoded value paths: \(flattenedValues().count)",
+            "Review before sharing: player, inventory, quest and save-specific data may be present.",
+            "",
+            "DECODED DATABASE TREE",
+            "====================="
+        ]
+        var visited = Set<UInt32>()
+        func walk(_ id: UInt32, _ path: String, _ depth: Int) {
+            guard let current = nodes[id] else { return }
+            let type: String
+            let valueText: String
+            switch current.value {
+            case .bool(let value): type = "Bool"; valueText = " = \(value)"
+            case .int8(let value): type = "Int8"; valueText = " = \(value)"
+            case .uint8(let value): type = "UInt8"; valueText = " = \(value)"
+            case .int32(let value): type = "Int32"; valueText = " = \(value)"
+            case .uint32(let value): type = "UInt32"; valueText = " = \(value)"
+            case .float32(let value): type = "Float32"; valueText = " = \(value)"
+            case .string(let value):
+                type = "String"
+                valueText = " = " + value.replacingOccurrences(of: "\n", with: "\\n").replacingOccurrences(of: "\r", with: "\\r")
+            case .null: type = "Null"; valueText = " = null"
+            case nil:
+                type = current.arrayChildren.isEmpty ? (current.objectChildren.isEmpty ? "Empty" : "Object") : "Array"
+                valueText = ""
+            }
+            let indent = String(repeating: "  ", count: depth)
+            lines.append("\(indent)\(path.isEmpty ? "ROOT" : path) [node=\(id), type=\(type), objectChildren=\(current.objectChildren.count), arrayChildren=\(current.arrayChildren.count)]\(valueText)")
+            guard visited.insert(id).inserted else {
+                lines.append("\(indent)  [already visited node; traversal stopped]")
+                return
+            }
+            for (key, child) in current.objectChildren.sorted(by: { $0.key < $1.key }) {
+                walk(child, path.isEmpty ? key : "\(path).\(key)", depth + 1)
+            }
+            for (index, child) in current.arrayChildren.enumerated() {
+                walk(child, path.isEmpty ? "[\(index)]" : "\(path)[\(index)]", depth + 1)
+            }
+        }
+        walk(rootID, "", 0)
+        if let map = localMap {
+            lines += [
+                "",
+                "LOCAL MAP SNAPSHOT",
+                "  size = \(map.width) x \(map.height)",
+                "  northWest = \(map.northWest.x), \(map.northWest.y)",
+                "  northEast = \(map.northEast.x), \(map.northEast.y)",
+                "  southWest = \(map.southWest.x), \(map.southWest.y)",
+                "  pixels = \(map.pixels.count) bytes"
+            ]
+        }
+        lines += ["", "END OF EXPORT"]
+        return lines.joined(separator: "\n")
+    }
+
     private func node(_ id: UInt32) -> Node {
         if let existing = nodes[id] { return existing }
         let created = Node(id: id)
