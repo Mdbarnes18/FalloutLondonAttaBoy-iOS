@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case status, map, inventory, radio, quests
+    case status, map, inventory, radio, quests, data
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -9,7 +9,8 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .map: "MAP"
         case .inventory: "ITEMS"
         case .radio: "RADIO"
-        case .quests: "DATA"
+        case .quests: "QUESTS"
+        case .data: "DATA"
         }
     }
     var symbol: String {
@@ -19,6 +20,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .inventory: "backpack"
         case .radio: "dot.radiowaves.left.and.right"
         case .quests: "text.book.closed"
+        case .data: "point.3.connected.trianglepath.dotted"
         }
     }
 }
