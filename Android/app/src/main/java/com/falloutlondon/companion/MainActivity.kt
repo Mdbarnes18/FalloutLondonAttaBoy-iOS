@@ -59,6 +59,7 @@ fun FalloutLondonApp() {
     var boot by remember { mutableStateOf("OFF") }
     var connectionState by remember { mutableStateOf("DISCONNECTED") }
     var demoMode by remember { mutableStateOf(loadDemoMode()) }
+    var selectedGame by remember { mutableStateOf(loadSelectedGame()) }
     var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
     var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
     var showingSettings by rememberSaveable { mutableStateOf(false) }
@@ -125,7 +126,7 @@ fun FalloutLondonApp() {
         AttaBoyShell {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("FOLON // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Text("ATTA-BOY // " + if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FALLOUT LONDON", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
                         modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
@@ -134,7 +135,15 @@ fun FalloutLondonApp() {
                 CrtFrame {
                     if (showingSettings) {
                         SettingsPanel(
-                            demoMode = demoMode, autoStimpak = autoStimpak, threshold = stimpakThreshold, connectionState = connectionState,
+                            demoMode = demoMode, autoStimpak = autoStimpak, threshold = stimpakThreshold, connectionState = connectionState, selectedGame = selectedGame,
+                            onSelectedGame = { game ->
+                                if (selectedGame != game) {
+                                    selectedGame = game; saveSelectedGame(game)
+                                    scope.launch { connection.disconnect() }
+                                    db.reset(); clearCachedDatabase(); player = PlayerState(); inventory.refresh(db)
+                                    if (!demoMode) scope.launch { runCatching { connection.discoverAndConnect() } }
+                                }
+                            },
                             onDemoMode = { enabled ->
                                 demoMode = enabled; saveDemoMode(enabled)
                                 if (enabled) { scope.launch { connection.disconnect() }; loadCachedDatabase(db); player = PlayerState.from(db, player); inventory.refresh(db) }
@@ -177,7 +186,7 @@ fun FalloutLondonApp() {
                                 scope.launch { runCatching { connection.discoverAndConnect() } }
                             }
                         }
-                        MainTab.MAP -> MapScreen(db, connection, scope)
+                        MainTab.MAP -> MapScreen(db, connection, scope, selectedGame)
                         MainTab.RADIO -> RadioPanel(db, connection, scope)
                     }
                 }
@@ -211,12 +220,20 @@ fun FalloutLondonApp() {
 
 @Composable
 fun SettingsPanel(
-    demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String,
-    onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
+    demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String, selectedGame: String,
+    onSelectedGame: (String) -> Unit, onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
     onReconnect: () -> Unit, onClearCache: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+        Text("GAME WORLD", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("LONDON", "COMMONWEALTH").forEach { game ->
+                Text(game, color = if (selectedGame == game) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                    modifier = Modifier.background(if (selectedGame == game) Phosphor else Color.Transparent).border(1.dp, Phosphor.copy(alpha = .4f)).clickable { onSelectedGame(game) }.padding(7.dp))
+            }
+        }
+        Text("Switching worlds resets the live session and cached database before reconnecting.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("CONNECTION", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Text(connectionState, color = Phosphor.copy(alpha = .75f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
         Text("RECONNECT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
@@ -612,12 +629,12 @@ private fun DataBrowserRow(
 }
 
 @Composable
-fun MapScreen(db: PipboyDatabase, connection: PipboyConnection, scope: CoroutineScope) {
+fun MapScreen(db: PipboyDatabase, connection: PipboyConnection, scope: CoroutineScope, selectedGame: String) {
     var mode by rememberSaveable { mutableStateOf("ORIGINAL") }
     var zoom by rememberSaveable { mutableStateOf(1f) }
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+            Text(if (selectedGame == "COMMONWEALTH") "COMMONWEALTH MAP" else "LONDON MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
             Spacer(Modifier.weight(1f))
             Text(if (db.localMap != null) "SNAPSHOT READY" else "NO SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         }
@@ -758,6 +775,8 @@ private fun format1(value: Double) = String.format("%.1f", value)
 private fun format2(value: Float) = String.format("%.2f", value)
 
 private lateinit var appContext: android.content.Context
+private fun loadSelectedGame(): String = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getString("selectedGame", "LONDON") ?: "LONDON"
+private fun saveSelectedGame(value: String) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putString("selectedGame", value).apply() }
 private fun loadDemoMode(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode", false)
 private fun loadAutoStimpak(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("autoStimpak", true)
 private fun saveAutoStimpak(value: Boolean) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("autoStimpak", value).apply() }
