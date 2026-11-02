@@ -117,6 +117,32 @@ class ProtocolContractTest {
         assertTrue(export.contains("playerinfo [node=10, type=Object"))
         assertTrue(export.contains("Decoded value paths: 1"))
     }
+    @Test fun dataUpdateLoggerCapturesNewUpdatedAndDeletedRecords() {
+        val database = PipboyDatabase()
+        database.loggingEnabled = true
+        database.apply(PipboyUpdate.Data(listOf(
+            PipboyRecord.Object(0L, listOf("playerinfo" to 10L), emptyList()),
+            PipboyRecord.Object(10L, listOf("currhp" to 11L), emptyList()),
+            PipboyRecord.Value(11L, PipboyValue.Float32(87.5f))
+        )))
+        assertTrue(database.updateLog.any { it.contains("New Record(11): playerinfo.currhp => float( 87.5 )") })
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Value(11L, PipboyValue.Float32(90f)))))
+        assertTrue(database.updateLog.any { it.contains("Updated Record(11): playerinfo.currhp => float( 90.0 )") })
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Object(10L, emptyList(), listOf(11L)))))
+        assertTrue(database.updateLog.any { it.contains("Deleted Record(11): playerinfo.currhp") })
+    }
+
+    @Test fun dataUpdateLoggerIsOptInAndCanBeCleared() {
+        val database = PipboyDatabase()
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Value(1L, PipboyValue.Bool(true)))))
+        assertTrue(database.updateLog.isEmpty())
+        database.loggingEnabled = true
+        database.apply(PipboyUpdate.Data(listOf(PipboyRecord.Value(1L, PipboyValue.Bool(false)))))
+        assertTrue(database.updateLog.isNotEmpty())
+        database.clearUpdateLog()
+        assertTrue(database.updateLog.isEmpty())
+    }
+
     private fun u16(value: Int) = byteArrayOf(value.toByte(), (value shr 8).toByte())
     private fun u32(value: Long) = byteArrayOf(value.toByte(), (value shr 8).toByte(), (value shr 16).toByte(), (value shr 24).toByte())
 }
