@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,14 +60,15 @@ fun FalloutLondonApp() {
     var selectedCategory by remember { mutableStateOf(InventoryCategory.WEAPONS) }
     var boot by remember { mutableStateOf("OFF") }
     var connectionState by remember { mutableStateOf("DISCONNECTED") }
-    var demoMode by remember { mutableStateOf(loadDemoMode()) }
+    var selectedGame by remember { mutableStateOf(loadSelectedGame()) }
+    var demoMode by remember { mutableStateOf(loadDemoMode(selectedGame)) }
     var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
     var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
     var showingSettings by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
-            loadCachedDatabase(db)
+            loadCachedDatabase(db, selectedGame)
             player = PlayerState.from(db, player)
             inventory.refresh(db)
         }
@@ -85,7 +88,7 @@ fun FalloutLondonApp() {
         connection.onUpdate = { update ->
             scope.launch {
                 db.apply(update)
-                saveCachedDatabase(db)
+                saveCachedDatabase(db, selectedGame)
                 player = PlayerState.from(db, player)
                 inventory.category = selectedCategory
                 inventory.refresh(db)
@@ -125,7 +128,7 @@ fun FalloutLondonApp() {
         AttaBoyShell {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("FOLON // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Text((if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FOLON") + " // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
                         modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
@@ -134,16 +137,31 @@ fun FalloutLondonApp() {
                 CrtFrame {
                     if (showingSettings) {
                         SettingsPanel(
-                            demoMode = demoMode, autoStimpak = autoStimpak, threshold = stimpakThreshold, connectionState = connectionState,
+                            demoMode = demoMode, autoStimpak = autoStimpak, threshold = stimpakThreshold, connectionState = connectionState, selectedGame = selectedGame,
+                            onSelectedGame = { game ->
+                                if (selectedGame != game) {
+                                    selectedGame = game; saveSelectedGame(game)
+                                    demoMode = loadDemoMode(game)
+                                    scope.launch {
+                                        connection.disconnect()
+                                        db.reset()
+                                        player = PlayerState()
+                                        if (demoMode) loadCachedDatabase(db, selectedGame)
+                                        player = PlayerState.from(db, player)
+                                        inventory.refresh(db)
+                                        if (!demoMode) runCatching { connection.discoverAndConnect() }
+                                    }
+                                }
+                            },
                             onDemoMode = { enabled ->
-                                demoMode = enabled; saveDemoMode(enabled)
-                                if (enabled) { scope.launch { connection.disconnect() }; loadCachedDatabase(db); player = PlayerState.from(db, player); inventory.refresh(db) }
+                                demoMode = enabled; saveDemoMode(enabled, selectedGame)
+                                if (enabled) { scope.launch { connection.disconnect() }; db.reset(); loadCachedDatabase(db, selectedGame); player = PlayerState.from(db, player); inventory.refresh(db) }
                                 else scope.launch { runCatching { connection.discoverAndConnect() } }
                             },
                             onAutoStimpak = { enabled -> autoStimpak = enabled; medical.autoStimpakEnabled = enabled; saveAutoStimpak(enabled) },
                             onThreshold = { value -> stimpakThreshold = value; medical.threshold = value; saveAutoStimpakThreshold(value) },
                             onReconnect = { scope.launch { connection.disconnect(); if (!demoMode) runCatching { connection.discoverAndConnect() } } },
-                            onClearCache = { clearCachedDatabase(); db.reset(); player = PlayerState(); inventory.refresh(db) }
+                            onClearCache = { clearCachedDatabase(selectedGame); db.reset(); player = PlayerState(); inventory.refresh(db) }
                         )
                     } else when (selectedTab) {
                         MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold,
@@ -165,19 +183,20 @@ fun FalloutLondonApp() {
                                 inventory.refresh(db)
                             }
                         )
-                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode) { enabled ->
+                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode, selectedGame) { enabled ->
                             demoMode = enabled
-                            saveDemoMode(enabled)
+                            saveDemoMode(enabled, selectedGame)
                             if (enabled) {
                                 scope.launch { connection.disconnect() }
-                                loadCachedDatabase(db)
+                                db.reset()
+                                loadCachedDatabase(db, selectedGame)
                                 player = PlayerState.from(db, player)
                                 inventory.refresh(db)
                             } else {
                                 scope.launch { runCatching { connection.discoverAndConnect() } }
                             }
                         }
-                        MainTab.MAP -> MapScreen(db, connection, scope)
+                        MainTab.MAP -> MapScreen(db, connection, scope, selectedGame)
                         MainTab.RADIO -> RadioPanel(db, connection, scope)
                     }
                 }
@@ -211,12 +230,20 @@ fun FalloutLondonApp() {
 
 @Composable
 fun SettingsPanel(
-    demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String,
-    onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
+    demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String, selectedGame: String,
+    onSelectedGame: (String) -> Unit, onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
     onReconnect: () -> Unit, onClearCache: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+        Text("GAME WORLD", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("LONDON", "COMMONWEALTH").forEach { game ->
+                Text(game, color = if (selectedGame == game) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                    modifier = Modifier.background(if (selectedGame == game) Phosphor else Color.Transparent).border(1.dp, Phosphor.copy(alpha = .4f)).clickable { onSelectedGame(game) }.padding(7.dp))
+            }
+        }
+        Text("Switching worlds resets the live session and cached database before reconnecting.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("CONNECTION", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Text(connectionState, color = Phosphor.copy(alpha = .75f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
         Text("RECONNECT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
@@ -360,15 +387,79 @@ fun StatusScreen(
             medical.threshold = value
             onThresholdChanged(value)
         }, valueRange = 0.10f..0.90f, steps = 15)
-        player.limbConditions.forEach { entry ->
-            Text(entry.key + "  " + (entry.value * 100.0).toInt() + "%", color = Phosphor.copy(alpha=.75f), fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-        }
+        LimbConditionPanel(player.limbConditions)
         if (player.activeEffects.isNotEmpty()) {
             Text("EFFECTS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
             player.activeEffects.forEach { effect ->
                 Text("• " + effect, color = Phosphor.copy(alpha=.8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
         }
+    }
+}
+
+@Composable
+fun LimbConditionPanel(conditions: Map<String, Double>) {
+    val regions = listOf(
+        "HEAD" to listOf("HEAD"),
+        "TORSO" to listOf("TORSO"),
+        "LEFT ARM" to listOf("LEFT ARM", "L ARM"),
+        "RIGHT ARM" to listOf("RIGHT ARM", "R ARM"),
+        "LEFT LEG" to listOf("LEFT LEG", "L LEG"),
+        "RIGHT LEG" to listOf("RIGHT LEG", "R LEG")
+    )
+    fun value(keys: List<String>) = keys.firstNotNullOfOrNull { conditions[it] }
+    fun status(v: Double) = when {
+        v <= 0.0 -> "CRIPPLED"
+        v < .25 -> "CRITICAL"
+        v < .50 -> "DAMAGED"
+        v < 1.0 -> "WOUNDED"
+        else -> "HEALTHY"
+    }
+    fun tint(v: Double) = if (v < .25) Color(0xFFFF6655) else if (v < .50) Color(0xFFFFB000) else Phosphor
+
+    Column(Modifier.fillMaxWidth().border(1.dp, Phosphor.copy(alpha = .35f)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Text("BODY // LIMB CONDITION", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Text("LIVE BODY-PART CONDITION · VALUES FROM GAME DATABASE", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("LEFT ARM", "LEFT LEG").forEach { label ->
+                LimbConditionCell(label, value(regions.first { it.first == label }.second), ::status, ::tint, Modifier.weight(1f))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LimbConditionCell("HEAD", value(listOf("HEAD")), ::status, ::tint, Modifier.fillMaxWidth())
+                LimbConditionCell("TORSO", value(listOf("TORSO")), ::status, ::tint, Modifier.fillMaxWidth())
+            }
+            listOf("RIGHT ARM", "RIGHT LEG").forEach { label ->
+                LimbConditionCell(label, value(regions.first { it.first == label }.second), ::status, ::tint, Modifier.weight(1f))
+            }
+        }
+        regions.forEach { (label, keys) ->
+            val current = value(keys)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(label, color = Phosphor.copy(alpha = .65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                Spacer(Modifier.weight(1f))
+                Text(current?.let { "${(it * 100).toInt()}%  //  ${status(it)}" } ?: "NO DATA",
+                    color = current?.let(::tint) ?: Phosphor.copy(alpha = .4f),
+                    fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LimbConditionCell(
+    label: String,
+    value: Double?,
+    status: (Double) -> String,
+    tint: (Double) -> Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier.border(1.dp, Phosphor.copy(alpha = .25f)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(label.replace("LEFT ", "L ").replace("RIGHT ", "R "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 6.sp)
+        Text(value?.let { "${(it * 100).toInt()}%" } ?: "--", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Box(Modifier.fillMaxWidth().height(4.dp).background(Phosphor.copy(alpha = .12f))) {
+            if (value != null) Box(Modifier.fillMaxWidth(value.coerceIn(0.0, 1.0).toFloat()).fillMaxHeight().background(tint(value)))
+        }
+        Text(value?.let(status) ?: "NO DATA", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
     }
 }
 
@@ -477,12 +568,12 @@ fun InventoryScreen(store: InventoryStore, category: InventoryCategory, onCatego
 }
 
 @Composable
-fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, onDemoMode: (Boolean) -> Unit) {
+fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, selectedGame: String, onDemoMode: (Boolean) -> Unit) {
     val context = LocalContext.current
     var path by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
     var copied by remember { mutableStateOf(false) }
-    val export = remember(db.nodes.size, db.localMap) { db.exportText() }
+    val export = db.exportText(selectedGame, if (demoMode) "DEMO / CACHED" else "LIVE SESSION")
 
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
@@ -523,7 +614,7 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
                 color = Phosphor,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 8.sp,
-                modifier = Modifier.clickable { saveLauncher.launch("Fallout-London-Data.txt") }.padding(5.dp)
+                modifier = Modifier.clickable { saveLauncher.launch("Atta-Boy-$selectedGame-Diagnostics.txt") }.padding(5.dp)
             )
         }
 
@@ -612,39 +703,71 @@ private fun DataBrowserRow(
 }
 
 @Composable
-fun MapScreen(db: PipboyDatabase, connection: PipboyConnection, scope: CoroutineScope) {
-    var mode by rememberSaveable { mutableStateOf("ORIGINAL") }
+fun MapScreen(db: PipboyDatabase, connection: PipboyConnection, scope: CoroutineScope, selectedGame: String) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
+    val locationNode = db.nodeId("map.world.locations")
+    val locations = locationNode?.let { db.arrayChildren(it) }.orEmpty().mapIndexedNotNull { index, _ ->
+        val path = "map.world.locations[$index]"
+        val x = db.value("$path.x").asDouble()
+        val y = db.value("$path.y").asDouble()
+        if (x == null || y == null) null else Triple(db.value("$path.name").asString() ?: "LOCATION ${index + 1}", x, y)
+    }
+    val playerX = db.value("map.world.player.x").asDouble()
+    val playerY = db.value("map.world.player.y").asDouble()
+    val allX = locations.map { it.second } + listOfNotNull(playerX)
+    val allY = locations.map { it.third } + listOfNotNull(playerY)
+    val minX = allX.minOrNull() ?: -1000.0
+    val maxX = allX.maxOrNull() ?: 1000.0
+    val minY = allY.minOrNull() ?: -1000.0
+    val maxY = allY.maxOrNull() ?: 1000.0
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+            Text(if (selectedGame == "COMMONWEALTH") "COMMONWEALTH MAP" else "LONDON MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
             Spacer(Modifier.weight(1f))
-            Text(if (db.localMap != null) "SNAPSHOT READY" else "NO SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            Text(if (db.localMap != null) "SNAPSHOT READY" else "LIVE PLOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            listOf("ORIGINAL", "ENHANCED", "TOPOGRAPHICAL").forEach { option ->
-                Text(option, color = if (mode == option) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
-                    modifier = Modifier.background(if (mode == option) Phosphor else Color.Transparent)
-                        .border(1.dp, Phosphor.copy(alpha = .3f)).clickable { mode = option }.padding(5.dp))
+        Box(Modifier.fillMaxWidth().weight(1f).border(1.dp, Phosphor.copy(alpha = .3f)).padding(6.dp)) {
+            Canvas(Modifier.fillMaxSize()) {
+                val grid = 8
+                for (i in 0..grid) {
+                    val px = size.width * i / grid
+                    val py = size.height * i / grid
+                    drawLine(Phosphor.copy(alpha = .12f), Offset(px, 0f), Offset(px, size.height), 1f)
+                    drawLine(Phosphor.copy(alpha = .12f), Offset(0f, py), Offset(size.width, py), 1f)
+                }
+                val spanX = (maxX - minX).coerceAtLeast(1.0)
+                val spanY = (maxY - minY).coerceAtLeast(1.0)
+                locations.forEach { point ->
+                    val x = (((point.second - minX) / spanX) * size.width * zoom).toFloat().coerceIn(0f, size.width)
+                    val y = (size.height - (((point.third - minY) / spanY) * size.height * zoom).toFloat()).coerceIn(0f, size.height)
+                    drawCircle(Phosphor.copy(alpha = .8f), radius = 3.5f, center = Offset(x, y))
+                }
+                if (playerX != null && playerY != null) {
+                    val x = (((playerX - minX) / spanX) * size.width * zoom).toFloat().coerceIn(0f, size.width)
+                    val y = (size.height - (((playerY - minY) / spanY) * size.height * zoom).toFloat()).coerceIn(0f, size.height)
+                    drawCircle(Phosphor, radius = 7f, center = Offset(x, y))
+                    drawCircle(Color.White, radius = 2.5f, center = Offset(x, y))
+                }
             }
         }
-        Box(Modifier.fillMaxWidth().weight(1f).border(1.dp, Phosphor.copy(alpha = .3f)).padding(10.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("MAP CANVAS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
-                Text("MODE " + mode + "   ZOOM " + String.format("%.1fx", zoom), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
-                if (db.localMap != null) Text("LOCAL SNAPSHOT PAYLOAD AVAILABLE", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-                else Text("NO LOCAL MAP SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-                Text("PLAYER / QUEST / DISCOVERED / CUSTOM MARKER LAYERS", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
-                Text("ARTWORK + COORDINATE TRANSFORM AWAIT LIVE CAPTURE VERIFICATION", color = Phosphor.copy(alpha = .45f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
-            }
-        }
+        Text("PLAYER X ${playerX?.let { format0(it) } ?: "--"}  Y ${playerY?.let { format0(it) } ?: "--"}  ·  ${locations.size} LOCATIONS",
+            color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("X " + db.value("map.world.player.x").asNumberText() + "  Y " + db.value("map.world.player.y").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
-            Spacer(Modifier.weight(1f))
             Text("ZOOM -", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom - .25f).coerceAtLeast(.75f) }.padding(5.dp))
             Text("ZOOM +", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom + .25f).coerceAtMost(4f) }.padding(5.dp))
+            Spacer(Modifier.weight(1f))
             Text("REQUEST MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { scope.launch { connection.sendRPC(13, emptyList()) } }.padding(5.dp))
         }
+        Column(Modifier.fillMaxWidth().weight(.55f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("WORLD LOCATION REGISTER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+            if (locations.isEmpty()) Text("NO LOCATION RECORDS RECEIVED FROM GAME", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            locations.take(100).forEach { point ->
+                Text(point.first.uppercase() + "  ·  X " + format0(point.second) + "  Y " + format0(point.third),
+                    color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            }
+        }
+        if (db.localMap != null) Text("LOCAL MAP SNAPSHOT DATA RECEIVED · PIXEL RENDERING REQUIRES PLATFORM MAP DECODER",
+            color = Phosphor.copy(alpha = .5f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
     }
 }
 
@@ -736,6 +859,15 @@ fun QuestPanel(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
     }
 }
 
+private fun PipboyValue?.asDouble(): Double? = when (this) {
+    is PipboyValue.Float32 -> value.toDouble()
+    is PipboyValue.Int32 -> value.toDouble()
+    is PipboyValue.UInt32 -> value.toDouble()
+    is PipboyValue.UInt8 -> value.toDouble()
+    is PipboyValue.Int8 -> value.toDouble()
+    else -> null
+}
+
 private fun PipboyValue?.asString() = (this as? PipboyValue.StringValue)?.value
 private fun PipboyValue?.asBool() = (this as? PipboyValue.Bool)?.value
 private fun PipboyValue?.asUInt(): Long? = when (this) {
@@ -758,22 +890,24 @@ private fun format1(value: Double) = String.format("%.1f", value)
 private fun format2(value: Float) = String.format("%.2f", value)
 
 private lateinit var appContext: android.content.Context
-private fun loadDemoMode(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode", false)
+private fun loadSelectedGame(): String = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getString("selectedGame", "LONDON") ?: "LONDON"
+private fun saveSelectedGame(value: String) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putString("selectedGame", value).apply() }
+private fun loadDemoMode(game: String): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode_$game", false)
 private fun loadAutoStimpak(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("autoStimpak", true)
 private fun saveAutoStimpak(value: Boolean) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("autoStimpak", value).apply() }
 private fun loadAutoStimpakThreshold(): Double = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getFloat("autoStimpakThreshold", 0.35f).toDouble()
 private fun saveAutoStimpakThreshold(value: Double) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putFloat("autoStimpakThreshold", value.toFloat()).apply() }
-private fun saveDemoMode(value: Boolean) {
-    appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("demoMode", value).apply()
+private fun saveDemoMode(value: Boolean, game: String) {
+    appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("demoMode_$game", value).apply()
 }
-private fun clearCachedDatabase() {
-    if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().remove("cache").apply()
+private fun clearCachedDatabase(game: String) {
+    if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().remove("cache_$game").apply()
 }
-private fun loadCachedDatabase(db: PipboyDatabase) {
+private fun loadCachedDatabase(db: PipboyDatabase, game: String) {
     if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE)
-        .getString("cache", null)?.let { db.restoreSnapshot(it) }
+        .getString("cache_$game", null)?.let { db.restoreSnapshot(it) }
 }
-private fun saveCachedDatabase(db: PipboyDatabase) {
+private fun saveCachedDatabase(db: PipboyDatabase, game: String) {
     if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE)
-        .edit().putString("cache", db.snapshotJson()).apply()
+        .edit().putString("cache_$game", db.snapshotJson()).apply()
 }

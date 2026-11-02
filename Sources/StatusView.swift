@@ -137,13 +137,7 @@ struct StatusView: View {
                         Text("AUTO USE IS OFF BY DEFAULT. ENABLE IT TO ALLOW THE APP TO USE A STIMPAK WHEN HP FALLS BELOW THE THRESHOLD.")
                             .font(.system(size: 7, design: .monospaced)).foregroundStyle(PipTheme.muted)
                     }
-                    if !state.limbConditions.isEmpty {
-                        PipPanel(title: "LIMB CONDITION") {
-                            ForEach(state.limbConditions.keys.sorted(), id: \.self) { limb in
-                                MeterRow(title: limb, value: state.limbConditions[limb] ?? 0)
-                            }
-                        }
-                    }
+                    LimbConditionPanel(conditions: state.limbConditions)
                     if !state.activeEffects.isEmpty {
                         PipPanel(title: "ACTIVE EFFECTS") {
                             ForEach(state.activeEffects, id: \.self) { effect in

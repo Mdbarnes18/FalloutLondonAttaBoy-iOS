@@ -4,14 +4,14 @@
   <img src="Assets/AppIcon-Original.png" alt="Original approved ATTA-Boy app icon" width="256">
 </p>
 
-An independent, multi-platform **ATTA-Boy-style companion app** for Fallout 4 / **Fallout: London**. It connects to your game over your home network and shows your Pip-Boy data on a second screen: status, inventory, quests and data, map, and radio.
+An independent, multi-platform **ATTA-Boy-style companion app** for **Fallout: London** and **Fallout 4**. Select London or the Commonwealth in Settings; the ATTA-Boy branding and interface remain the same. It connects to your game over your home network and shows your Pip-Boy data on a second screen: status, inventory, quests and data, map, and radio.
 
 > **Not affiliated with, endorsed by, or sponsored by Bethesda or Team FOLON.** See [Legal](#legal-and-attribution).
 
 | | |
 |---|---|
 | **Platforms** | iPhone / iPad, Android, Windows, Linux |
-| **Game** | Fallout 4 / Fallout: London on **PC** (same private network as your device) |
+| **Game** | Fallout: London or Fallout 4 (Commonwealth), running on **PC** on the same private network as your device |
 | **Status** | Early release (`1.00`). Builds on all four platforms; **not yet verified against a live Fallout: London session**. See [Status](#status-what-works-and-what-is-unverified). |
 
 ## Features
@@ -19,7 +19,7 @@ An independent, multi-platform **ATTA-Boy-style companion app** for Fallout 4 / 
 - **STAT** – HP and AP, radiation, carry weight, level and XP, SPECIAL, limb condition, active effects.
 - **INV** – inventory by category, search, item details.
 - **DATA** – quests and objectives, plus a searchable browser over the raw live database (copy or save as text on iOS).
-- **MAP** – game-provided coordinates, discovered locations, local-map snapshots.
+- **MAP** – selectable London / Commonwealth world profile, live game-provided coordinates and discovered locations. All four platforms render the same coordinate-plot experience; an offline Commonwealth basemap is not bundled.
 - **RADIO** – station list and state.
 - **Medical** – manual Stimpak / RadAway buttons and an opt-in **Auto-Stimpak** (see [Safety notes](#safety-notes)).
 
@@ -77,7 +77,7 @@ Automated tests and CI cover the protocol decoder, the object graph, and packagi
 | Xbox | **Not supported** |
 | Feature parity across platforms | iOS is the reference; others lag |
 
-The app does not invent London geography or treat a command as supported just because the same numeric ID exists in a Fallout 4 reference.
+The app does not invent world geography or treat a command as supported just because the same numeric ID exists in a Fallout 4 reference.
 
 **Want to help verify?** A capture of a real Fallout: London session (handshake, a few minutes of updates, and a local-map packet) is the single most valuable contribution. See [Contributing](#contributing).
 
@@ -103,6 +103,7 @@ Frames are a 5-byte header (little-endian `UInt32` length + `UInt8` type) follow
 
 - [Protocol contract and verification limits](Documentation/PROTOCOL.md)
 - [Reference-source register](Documentation/REFERENCE_SOURCES.md)
+- [Multi-game support and Commonwealth map provenance](Documentation/MULTI_GAME_SUPPORT.md)
 - [Shared cross-platform contract](Shared/README.md)
 - [UI scaffolding checklist](Documentation/SCAFFOLDING_CHECKLIST.md)
 - [Asset provenance](Documentation/ASSETS.md)
@@ -140,7 +141,7 @@ Bug reports are welcome; please use the issue template and include your platform
 
 The approved project icon is locked artwork. Android and desktop CI retrieve the exact PNG from the original companion repository at pinned commit `b2e544f4279ddfbe3184b573de04b4104906f7f3`; see [ASSETS.md](Documentation/ASSETS.md).
 
-Do not commit Bethesda game assets, decompiled proprietary code, private Team FOLON material, private Discord conversations, or permission correspondence. Confirm redistribution rights for each third-party asset before including it.
+Do not commit Bethesda game assets, decompiled proprietary code, private Team FOLON material, or permission correspondence. Confirm redistribution rights for each third-party asset before including it.
 
 **WITH THANKS TO TEAM FOLON**
 

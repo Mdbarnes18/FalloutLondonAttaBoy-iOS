@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var state: AttaBoyState
     @State private var bootComplete = false
+    @State private var showingSettings = false
 
     var body: some View {
         ZStack {
@@ -30,10 +31,13 @@ struct ContentView: View {
                     .tracking(2)
                     .foregroundStyle(PipTheme.amber)
                 Spacer()
-                Text("FALLOUT // LONDON")
+                Text("FALLOUT // \(state.gameWorld == .london ? "LONDON" : "COMMONWEALTH")")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(1)
                     .foregroundStyle(PipTheme.amberDim)
+                Button { showingSettings = true } label: {
+                    Image(systemName: "gearshape").font(.system(size: 11, weight: .bold)).foregroundStyle(PipTheme.amber)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.top, 8)
@@ -76,14 +80,50 @@ struct ContentView: View {
                     .tabItem { Label("RADIO", systemImage: "dot.radiowaves.left.and.right") }
                     .tag(AppTab.radio)
                 QuestView()
-                    .tabItem { Label("DATA", systemImage: "text.book.closed") }
+                    .tabItem { Label("QUESTS", systemImage: "text.book.closed") }
                     .tag(AppTab.quests)
+                DataBrowserView()
+                    .tabItem { Label("DATA", systemImage: "point.3.connected.trianglepath.dotted") }
+                    .tag(AppTab.data)
             }
             .tint(PipTheme.amber)
             .toolbarBackground(PipTheme.panel, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
         }
         .background(PipTheme.background)
+        .sheet(isPresented: $showingSettings) {
+            NavigationStack {
+                Form {
+                    Section("GAME WORLD") {
+                        Picker("SELECT GAME", selection: Binding(get: { state.gameWorld }, set: { state.selectGameWorld($0) })) {
+                            Text("Fallout: London").tag(GameWorld.london)
+                            Text("Fallout 4 — Commonwealth").tag(GameWorld.commonwealth)
+                        }
+                        Text("Changing worlds clears the current live session and cached map data. Reconnect after selecting the game.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Section("DEMO MODE") {
+                        Toggle("DEMO / PREVIEW DATA", isOn: Binding(get: { state.demoModeEnabled }, set: { state.setDemoModeEnabled($0) }))
+                        Text("Demo mode is saved separately for each game world. It uses preview or cached data and disables live game actions.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Section("CONNECTION") {
+                        LabeledContent("STATUS", value: state.connectionLabel)
+                        Button("AUTO DISCOVER") { state.discoverGame() }
+                        Button("DISCONNECT", role: .destructive) { state.disconnectGame() }
+                    }
+                    Section("MEDICAL") {
+                        Toggle("AUTO-STIMPAK", isOn: Binding(get: { state.autoStimpakEnabled }, set: { state.setAutoStimpakEnabled($0) }))
+                        VStack(alignment: .leading) {
+                            Text("AUTO-STIMPAK THRESHOLD · \(Int(state.autoStimpakThreshold * 100))%")
+                            Slider(value: Binding(get: { state.autoStimpakThreshold }, set: { state.setAutoStimpakThreshold($0) }), in: 0.10...0.90, step: 0.05)
+                        }
+                    }
+                }
+                .scrollContentBackground(.hidden).background(PipTheme.background)
+                .navigationTitle("SETTINGS").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("DONE") { showingSettings = false } } }
+            }.tint(PipTheme.amber)
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 15)
                 .stroke(PipTheme.amberDim.opacity(0.35), lineWidth: 1)

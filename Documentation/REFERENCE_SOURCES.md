@@ -12,6 +12,12 @@ This register records the upstream material used to understand the Fallout 4 Pip
 | [NimVek/pipboy](https://github.com/NimVek/pipboy) | Independent protocol implementation and packet investigation | README notes that some platform-specific discovery details remain uncertain. |
 | [MrPippy](https://github.com/ekimekim/mrpippy) | Independent Python encoding/decoding and data management | Draws on PyPipboy; useful corroboration, not wholly independent evidence. |
 
+## Fallout 4 Commonwealth map research
+
+| Source | What it supports | Limits / notes |
+|---|---|---|
+| [Commonwealth Cartography](https://github.com/Mappalachia/Commonwealth_Cartography) | Research on Fallout 4 Commonwealth background rendering, marker extraction, world-space data preprocessing and map database generation | GPL-3.0 project. Its map/background and marker imagery are derived from Fallout 4. This app references its documented workflow but does not copy its game-derived image assets; see MULTI_GAME_SUPPORT.md. |
+
 ## Additional context
 
 - [PipBoyClient](https://github.com/cpopp/PipBoyClient) documents a minimal discovery, TCP framing, heartbeat and RPC experiment.

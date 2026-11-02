@@ -76,8 +76,18 @@ struct LiveDatabaseEntry: Identifiable {
     var id: String { path }
 }
 
+enum GameWorld: String, CaseIterable, Identifiable {
+    case london = "FALLOUT_LONDON"
+    case commonwealth = "COMMONWEALTH"
+    var id: String { rawValue }
+    var title: String { self == .london ? "FALLOUT: LONDON" : "FALLOUT 4 // COMMONWEALTH" }
+    var mapTitle: String { self == .london ? "LONDON MAP" : "COMMONWEALTH MAP" }
+}
+
 @MainActor
 final class AttaBoyState: ObservableObject {
+    @Published private(set) var gameWorld: GameWorld = GameWorld(rawValue: UserDefaults.standard.string(forKey: "gameWorld") ?? "") ?? .london
+    @Published private(set) var demoModeEnabled = UserDefaults.standard.object(forKey: "demoMode_FALLOUT_LONDON") as? Bool ?? true
     @Published var selectedTab: AppTab = .status
     @Published var selectedDistrictID = District.all[0].id
     @Published var selectedCategory: ItemCategory = .all
@@ -159,6 +169,16 @@ final class AttaBoyState: ObservableObject {
         }
     }
 
+    var diagnosticExportText: String {
+        let source = demoModeEnabled ? "DEMO / CACHED" : (isLiveData ? "LIVE GAME" : "NO LIVE SESSION")
+        return database.diagnosticExportText(
+            gameWorld: gameWorld.title,
+            dataSource: source,
+            serverVersion: serverVersion,
+            serverLanguage: serverLanguage
+        )
+    }
+
     var selectedDistrict: District {
         District.all.first(where: { $0.id == selectedDistrictID }) ?? District.all[0]
     }
@@ -184,7 +204,42 @@ final class AttaBoyState: ObservableObject {
         }
     }
 
+    func selectGameWorld(_ world: GameWorld) {
+        guard gameWorld != world else { return }
+        gameWorld = world
+        UserDefaults.standard.set(world.rawValue, forKey: "gameWorld")
+        demoModeEnabled = UserDefaults.standard.object(forKey: "demoMode_\(world.rawValue)") as? Bool ?? true
+        connectionService.disconnect()
+        connectionState = .disconnected
+        isLiveData = false
+        database.reset()
+        liveInventory = []
+        liveQuests = []
+        liveRadioStations = []
+        liveMapLocations = []
+        livePerks = []
+        databaseEntries = []
+        localMap = nil
+        playerPosition = nil
+        lastActionStatus = "GAME PROFILE CHANGED · RECONNECT TO THE SELECTED GAME"
+    }
+
+    func setDemoModeEnabled(_ enabled: Bool) {
+        demoModeEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "demoMode_\(gameWorld.rawValue)")
+        if enabled {
+            disconnectGame()
+            lastActionStatus = "DEMO MODE ENABLED · LIVE GAME ACTIONS DISABLED"
+        } else {
+            lastActionStatus = "DEMO MODE DISABLED · CONNECT TO THE SELECTED GAME"
+        }
+    }
+
     func discoverGame() {
+        guard !demoModeEnabled else {
+            lastActionStatus = "DISABLE DEMO MODE BEFORE CONNECTING"
+            return
+        }
         connectionService.disconnect()
         connectionService.discoverAndConnect()
     }
