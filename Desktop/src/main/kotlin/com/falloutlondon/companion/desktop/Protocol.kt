@@ -144,7 +144,63 @@ object PipboyPacketDecoder {
     var localMap: PipboyLocalMapUpdate? = null
         private set
 
+    var loggingEnabled: Boolean = false
+    val updateLog: MutableList<String> = mutableListOf()
+
+    private fun appendLog(message: String) {
+        if (!loggingEnabled) return
+        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", java.util.Locale.US)
+            .format(java.util.Date())
+        updateLog.add("$stamp: $message")
+        if (updateLog.size > 10_000) updateLog.removeAt(0)
+    }
+
+    fun logConnectionEvent(message: String) = appendLog(message)
+    fun clearUpdateLog() { updateLog.clear() }
+
+    private fun pathForNode(target: Long): String? {
+        val visited = mutableSetOf<Long>()
+        fun walk(id: Long, path: String, depth: Int): String? {
+            if (id == target) return path.ifEmpty { "ROOT" }
+            if (depth > 64 || !visited.add(id)) return null
+            val current = nodes[id] ?: return null
+            for ((key, child) in current.objectChildren) {
+                val found = walk(child, if (path.isEmpty()) key else "$path.$key", depth + 1)
+                if (found != null) return found
+            }
+            current.arrayChildren.forEachIndexed { index, child ->
+                val found = walk(child, "$path[$index]", depth + 1)
+                if (found != null) return found
+            }
+            return null
+        }
+        return walk(0L, "", 0)
+    }
+
+    private fun valueType(value: PipboyValue): String = when (value) {
+        is PipboyValue.Null -> "null"
+        is PipboyValue.Bool -> "bool"
+        is PipboyValue.Int8 -> "int8"
+        is PipboyValue.UInt8 -> "uint8"
+        is PipboyValue.Int32 -> "int32"
+        is PipboyValue.UInt32 -> "uint32"
+        is PipboyValue.Float32 -> "float"
+        is PipboyValue.StringValue -> "string"
+    }
+
+    private fun valueText(value: PipboyValue): String = when (value) {
+        is PipboyValue.Null -> "null"
+        is PipboyValue.Bool -> value.value.toString()
+        is PipboyValue.Int8 -> value.value.toString()
+        is PipboyValue.UInt8 -> value.value.toString()
+        is PipboyValue.Int32 -> value.value.toString()
+        is PipboyValue.UInt32 -> value.value.toString()
+        is PipboyValue.Float32 -> value.value.toString()
+        is PipboyValue.StringValue -> value.value.replace("\n", "\\n").replace("\r", "\\r")
+    }
+
     fun reset() {
+        appendLog("Root Object resetted.")
         nodes.clear()
         nodes[0L] = Node(0L)
         localMap = null
@@ -153,11 +209,14 @@ object PipboyPacketDecoder {
     fun apply(update: PipboyUpdate) {
         when (update) {
             is PipboyUpdate.Data -> update.records.forEach(::apply)
-            is PipboyUpdate.LocalMap -> localMap = update.map
-            is PipboyUpdate.CommandResponse -> Unit
-            is PipboyUpdate.Handshake -> Unit
-            is PipboyUpdate.Refused -> Unit
-            is PipboyUpdate.Unknown -> Unit
+            is PipboyUpdate.LocalMap -> {
+                localMap = update.map
+                appendLog("Updated Local Map: ${update.map.width}x${update.map.height}")
+            }
+            is PipboyUpdate.CommandResponse -> appendLog("Command response received: ${update.json.take(240)}")
+            is PipboyUpdate.Handshake -> appendLog("Connection handshake received.")
+            is PipboyUpdate.Refused -> appendLog("Connection refused by game.")
+            is PipboyUpdate.Unknown -> appendLog("Unknown packet type ${update.type} (${update.payload.size} bytes)")
         }
     }
 
@@ -165,12 +224,33 @@ object PipboyPacketDecoder {
 
     private fun apply(record: PipboyRecord) {
         when (record) {
-            is PipboyRecord.Value -> node(record.nodeId).value = record.value
-            is PipboyRecord.Array -> node(record.nodeId).apply { arrayChildren = record.children; value = null }
+            is PipboyRecord.Value -> {
+                val previous = nodes[record.nodeId]
+                val action = if (previous == null) "New" else "Updated"
+                val path = pathForNode(record.nodeId) ?: "node${record.nodeId}"
+                node(record.nodeId).value = record.value
+                appendLog("$action Record(${record.nodeId}): $path => ${valueType(record.value)}( ${valueText(record.value)} )")
+            }
+            is PipboyRecord.Array -> {
+                val action = if (nodes[record.nodeId] == null) "New" else "Updated"
+                val path = pathForNode(record.nodeId) ?: "node${record.nodeId}"
+                node(record.nodeId).apply { arrayChildren = record.children; value = null }
+                appendLog("$action Record(${record.nodeId}): $path => array( ${record.children.size} children )")
+            }
             is PipboyRecord.Object -> {
                 val n = node(record.nodeId)
-                record.added.forEach { n.objectChildren[it.first] = it.second }
-                record.removed.forEach { id -> n.objectChildren.entries.removeIf { it.value == id } }
+                val path = pathForNode(record.nodeId) ?: "node${record.nodeId}"
+                record.removed.forEach { id ->
+                    val removedPath = pathForNode(id) ?: "node$id"
+                    appendLog("Deleted Record($id): $removedPath => removed")
+                    n.objectChildren.entries.removeIf { it.value == id }
+                }
+                record.added.forEach { (key, id) ->
+                    val action = if (nodes[id] == null) "New" else "Updated"
+                    n.objectChildren[key] = id
+                    appendLog("$action Record($id): $path.$key => object child")
+                }
+                appendLog("Updated Record(${record.nodeId}): $path => object( +${record.added.size}/-${record.removed.size} )")
                 n.value = null
             }
         }
