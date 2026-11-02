@@ -98,6 +98,11 @@ struct ContentView: View {
                         }
                         Text("Changing worlds clears the current live session and cached map data. Reconnect after selecting the game.").font(.caption).foregroundStyle(.secondary)
                     }
+                    Section("DEMO MODE") {
+                        Toggle("DEMO / PREVIEW DATA", isOn: Binding(get: { state.demoModeEnabled }, set: { state.setDemoModeEnabled($0) }))
+                        Text("Demo mode is saved separately for each game world. It uses preview or cached data and disables live game actions.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                     Section("CONNECTION") {
                         LabeledContent("STATUS", value: state.connectionLabel)
                         Button("AUTO DISCOVER") { state.discoverGame() }
