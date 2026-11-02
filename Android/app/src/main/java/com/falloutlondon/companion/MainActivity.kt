@@ -183,7 +183,7 @@ fun FalloutLondonApp() {
                                 inventory.refresh(db)
                             }
                         )
-                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode) { enabled ->
+                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode, selectedGame) { enabled ->
                             demoMode = enabled
                             saveDemoMode(enabled, selectedGame)
                             if (enabled) {
@@ -504,12 +504,12 @@ fun InventoryScreen(store: InventoryStore, category: InventoryCategory, onCatego
 }
 
 @Composable
-fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, onDemoMode: (Boolean) -> Unit) {
+fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, selectedGame: String, onDemoMode: (Boolean) -> Unit) {
     val context = LocalContext.current
     var path by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
     var copied by remember { mutableStateOf(false) }
-    val export = remember(db.nodes.size, db.localMap) { db.exportText() }
+    val export = db.exportText(selectedGame, if (demoMode) "DEMO / CACHED" else "LIVE SESSION")
 
     val saveLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
