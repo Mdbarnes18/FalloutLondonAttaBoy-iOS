@@ -130,9 +130,14 @@ fun FalloutLondonApp() {
                             onSelectedGame = { game ->
                                 if (selectedGame != game) {
                                     selectedGame = game; saveSelectedGame(game)
-                                    scope.launch { connection.disconnect() }
-                                    db.reset(); clearCachedDatabase(); player = PlayerState(); inventory.refresh(db)
-                                    if (!demoMode) scope.launch { runCatching { connection.discoverAndConnect() } }
+                                    scope.launch {
+                                        connection.disconnect()
+                                        db.reset()
+                                        clearCachedDatabase()
+                                        player = PlayerState()
+                                        inventory.refresh(db)
+                                        if (!demoMode) runCatching { connection.discoverAndConnect() }
+                                    }
                                 }
                             },
                             onDemoMode = { enabled ->
