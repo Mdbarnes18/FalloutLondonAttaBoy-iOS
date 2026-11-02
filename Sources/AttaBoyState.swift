@@ -122,6 +122,8 @@ final class AttaBoyState: ObservableObject {
     @Published var liveMapLocations: [LiveMapLocation] = []
     @Published var livePerks: [LivePerk] = []
     @Published var databaseEntries: [LiveDatabaseEntry] = []
+    @Published var dataUpdateLoggerEnabled = UserDefaults.standard.bool(forKey: "dataUpdateLoggerEnabled")
+    @Published var dataUpdateLog: [String] = []
     @Published var localMap: PipboyLocalMapUpdate?
     @Published var playerPosition: (x: Double, y: Double, rotation: Double)?
     @Published private(set) var isLiveData = false
@@ -146,9 +148,18 @@ final class AttaBoyState: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.connectionState = newState
+                if self.dataUpdateLoggerEnabled {
+                    switch newState {
+                    case .connected: self.appendDataUpdateLog("New connection established.")
+                    case .failed(let reason): self.appendDataUpdateLog("Connection Error: " + reason)
+                    case .disconnected: self.appendDataUpdateLog("Connection Lost.")
+                    case .discovering, .connecting, .reconnecting: break
+                    }
+                }
                 if newState != .connected { self.isLiveData = false }
                 if newState == .connected {
                     self.database.reset()
+                    if self.dataUpdateLoggerEnabled { self.appendDataUpdateLog("Root Object resetted.") }
                     self.isLiveData = false
                     self.liveInventory = []
                     self.liveQuests = []
@@ -166,6 +177,21 @@ final class AttaBoyState: ObservableObject {
         }
         connectionService.onUpdate = { [weak self] update in
             Task { @MainActor in self?.apply(update) }
+        }
+    }
+
+    func setDataUpdateLoggerEnabled(_ enabled: Bool) {
+        dataUpdateLoggerEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "dataUpdateLoggerEnabled")
+    }
+
+    func clearDataUpdateLog() { dataUpdateLog.removeAll() }
+
+    private func appendDataUpdateLog(_ message: String) {
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        dataUpdateLog.append("\(stamp): \(message)")
+        if dataUpdateLog.count > 10_000 {
+            dataUpdateLog.removeFirst(dataUpdateLog.count - 10_000)
         }
     }
 
@@ -419,7 +445,10 @@ final class AttaBoyState: ObservableObject {
             break
         }
 
-        database.apply(update)
+        let events = database.apply(update)
+        if dataUpdateLoggerEnabled {
+            events.forEach(appendDataUpdateLog)
+        }
         switch update {
         case .data(let data):
             if !data.records.isEmpty { refreshLiveData() }
