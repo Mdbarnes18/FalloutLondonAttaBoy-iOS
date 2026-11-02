@@ -24,7 +24,9 @@ The companion currently renders the same live coordinate-plot experience on iOS,
 ## Switching behavior
 
 - The default remains Fallout: London for existing installations.
-- The selection persists across app restarts.
+- The game selection and demo-mode preference persist independently across app restarts.
+- Demo mode can be enabled separately for London and Commonwealth; Android and desktop also keep separate cached database snapshots for each world.
+- iOS includes a distinct Commonwealth sample inventory for offline preview. Android and desktop demo mode displays the selected world's saved cache; a complete built-in sample database for those platforms is not yet included.
 - Switching profiles clears stale game data so London inventory/locations cannot leak into Commonwealth mode.
 - Android and desktop reconnect automatically after a profile change when live mode is enabled.
 - iOS exposes Auto Discover and Disconnect in Settings after changing the profile.
