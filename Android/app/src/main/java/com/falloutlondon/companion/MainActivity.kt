@@ -828,7 +828,7 @@ private fun format2(value: Float) = String.format("%.2f", value)
 private lateinit var appContext: android.content.Context
 private fun loadSelectedGame(): String = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getString("selectedGame", "LONDON") ?: "LONDON"
 private fun saveSelectedGame(value: String) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putString("selectedGame", value).apply() }
-private fun loadDemoMode(game: String): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode_$game", true)
+private fun loadDemoMode(game: String): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode_$game", false)
 private fun loadAutoStimpak(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("autoStimpak", true)
 private fun saveAutoStimpak(value: Boolean) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("autoStimpak", value).apply() }
 private fun loadAutoStimpakThreshold(): Double = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getFloat("autoStimpakThreshold", 0.35f).toDouble()
