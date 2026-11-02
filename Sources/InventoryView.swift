@@ -30,7 +30,7 @@ struct InventoryView: View {
                     detail: item.detail ?? "", equipped: item.equipped,
                     favorite: item.isFavorited, legendary: item.legendary, gameItem: item)
             }
-        } else {
+        } else if state.demoModeEnabled {
             let samples = state.gameWorld == .london ? InventoryItem.samples : InventoryItem.commonwealthSamples
             source = samples.map { item in
                 InventoryRow(id: item.id, name: item.name, category: item.category,
@@ -38,6 +38,8 @@ struct InventoryView: View {
                     detail: item.detail, equipped: state.equippedItemIDs.contains(item.id),
                     favorite: false, legendary: false, gameItem: nil)
             }
+        } else {
+            source = []
         }
         return source.filter {
             (category == .all || $0.category == category) &&
