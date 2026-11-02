@@ -141,7 +141,7 @@ Bug reports are welcome; please use the issue template and include your platform
 
 The approved project icon is locked artwork. Android and desktop CI retrieve the exact PNG from the original companion repository at pinned commit `b2e544f4279ddfbe3184b573de04b4104906f7f3`; see [ASSETS.md](Documentation/ASSETS.md).
 
-Do not commit Bethesda game assets, decompiled proprietary code, private Team FOLON material, private Discord conversations, or permission correspondence. Confirm redistribution rights for each third-party asset before including it.
+Do not commit Bethesda game assets, decompiled proprietary code, private Team FOLON material, or permission correspondence. Confirm redistribution rights for each third-party asset before including it.
 
 **WITH THANKS TO TEAM FOLON**
 
