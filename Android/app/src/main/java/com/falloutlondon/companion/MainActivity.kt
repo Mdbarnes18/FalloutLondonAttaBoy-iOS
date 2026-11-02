@@ -97,15 +97,21 @@ fun FalloutLondonApp() {
         }
 
         delay(450)
-        boot = "ATTA-BOY\nPOSITIONING..."
+        boot = "ATTA-BOY
+POSITIONING..."
         delay(700)
         boot = "DISPLAY INITIALIZING..."
         delay(650)
-        boot = "ATTA-BOY SYSTEM\nINITIALIZING"
+        boot = "ATTA-BOY SYSTEM
+INITIALIZING"
         delay(900)
-        boot = "SYSTEM CHECK ........ OK\nMEMORY ............. OK\nLINK ............... OK"
+        boot = "SYSTEM CHECK ........ OK
+MEMORY ............. OK
+LINK ............... OK"
         delay(750)
-        boot = "SYSTEM READY\n\nWITH THANKS TO TEAM FOLON"
+        boot = "SYSTEM READY
+
+WITH THANKS TO TEAM FOLON"
         delay(1400)
         boot = "READY"
 
@@ -787,7 +793,16 @@ fun QuestPanel(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
     }
 }
 
-private fun PipboyValue?.asDouble(): Double? = when (this) {\n    is PipboyValue.Float32 -> value.toDouble()\n    is PipboyValue.Int32 -> value.toDouble()\n    is PipboyValue.UInt32 -> value.toDouble()\n    is PipboyValue.UInt8 -> value.toDouble()\n    is PipboyValue.Int8 -> value.toDouble()\n    else -> null\n}\n\nprivate fun PipboyValue?.asString() = (this as? PipboyValue.StringValue)?.value
+private fun PipboyValue?.asDouble(): Double? = when (this) {
+    is PipboyValue.Float32 -> value.toDouble()
+    is PipboyValue.Int32 -> value.toDouble()
+    is PipboyValue.UInt32 -> value.toDouble()
+    is PipboyValue.UInt8 -> value.toDouble()
+    is PipboyValue.Int8 -> value.toDouble()
+    else -> null
+}
+
+private fun PipboyValue?.asString() = (this as? PipboyValue.StringValue)?.value
 private fun PipboyValue?.asBool() = (this as? PipboyValue.Bool)?.value
 private fun PipboyValue?.asUInt(): Long? = when (this) {
     is PipboyValue.UInt32 -> value
