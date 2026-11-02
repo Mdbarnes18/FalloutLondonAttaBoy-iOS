@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -630,38 +632,70 @@ private fun DataBrowserRow(
 
 @Composable
 fun MapScreen(db: PipboyDatabase, connection: PipboyConnection, scope: CoroutineScope, selectedGame: String) {
-    var mode by rememberSaveable { mutableStateOf("ORIGINAL") }
     var zoom by rememberSaveable { mutableStateOf(1f) }
+    val locationNode = db.nodeId("map.world.locations")
+    val locations = locationNode?.let { db.arrayChildren(it) }.orEmpty().mapIndexedNotNull { index, _ ->
+        val path = "map.world.locations[$index]"
+        val x = db.value("$path.x").asDouble()
+        val y = db.value("$path.y").asDouble()
+        if (x == null || y == null) null else Triple(db.value("$path.name").asString() ?: "LOCATION ${index + 1}", x, y)
+    }
+    val playerX = db.value("map.world.player.x").asDouble()
+    val playerY = db.value("map.world.player.y").asDouble()
+    val allX = locations.map { it.second } + listOfNotNull(playerX)
+    val allY = locations.map { it.third } + listOfNotNull(playerY)
+    val minX = allX.minOrNull() ?: -1000.0
+    val maxX = allX.maxOrNull() ?: 1000.0
+    val minY = allY.minOrNull() ?: -1000.0
+    val maxY = allY.maxOrNull() ?: 1000.0
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(if (selectedGame == "COMMONWEALTH") "COMMONWEALTH MAP" else "LONDON MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
             Spacer(Modifier.weight(1f))
-            Text(if (db.localMap != null) "SNAPSHOT READY" else "NO SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            Text(if (db.localMap != null) "SNAPSHOT READY" else "LIVE PLOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         }
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            listOf("ORIGINAL", "ENHANCED", "TOPOGRAPHICAL").forEach { option ->
-                Text(option, color = if (mode == option) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
-                    modifier = Modifier.background(if (mode == option) Phosphor else Color.Transparent)
-                        .border(1.dp, Phosphor.copy(alpha = .3f)).clickable { mode = option }.padding(5.dp))
+        Box(Modifier.fillMaxWidth().weight(1f).border(1.dp, Phosphor.copy(alpha = .3f)).padding(6.dp)) {
+            Canvas(Modifier.fillMaxSize()) {
+                val grid = 8
+                for (i in 0..grid) {
+                    val px = size.width * i / grid
+                    val py = size.height * i / grid
+                    drawLine(Phosphor.copy(alpha = .12f), Offset(px, 0f), Offset(px, size.height), 1f)
+                    drawLine(Phosphor.copy(alpha = .12f), Offset(0f, py), Offset(size.width, py), 1f)
+                }
+                val spanX = (maxX - minX).coerceAtLeast(1.0)
+                val spanY = (maxY - minY).coerceAtLeast(1.0)
+                locations.forEach { point ->
+                    val x = (((point.second - minX) / spanX) * size.width * zoom).toFloat().coerceIn(0f, size.width)
+                    val y = (size.height - (((point.third - minY) / spanY) * size.height * zoom).toFloat()).coerceIn(0f, size.height)
+                    drawCircle(Phosphor.copy(alpha = .8f), radius = 3.5f, center = Offset(x, y))
+                }
+                if (playerX != null && playerY != null) {
+                    val x = (((playerX - minX) / spanX) * size.width * zoom).toFloat().coerceIn(0f, size.width)
+                    val y = (size.height - (((playerY - minY) / spanY) * size.height * zoom).toFloat()).coerceIn(0f, size.height)
+                    drawCircle(Phosphor, radius = 7f, center = Offset(x, y))
+                    drawCircle(Color.White, radius = 2.5f, center = Offset(x, y))
+                }
             }
         }
-        Box(Modifier.fillMaxWidth().weight(1f).border(1.dp, Phosphor.copy(alpha = .3f)).padding(10.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("MAP CANVAS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
-                Text("MODE " + mode + "   ZOOM " + String.format("%.1fx", zoom), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
-                if (db.localMap != null) Text("LOCAL SNAPSHOT PAYLOAD AVAILABLE", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-                else Text("NO LOCAL MAP SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-                Text("PLAYER / QUEST / DISCOVERED / CUSTOM MARKER LAYERS", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
-                Text("ARTWORK + COORDINATE TRANSFORM AWAIT LIVE CAPTURE VERIFICATION", color = Phosphor.copy(alpha = .45f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
-            }
-        }
+        Text("PLAYER X ${playerX?.let { format0(it) } ?: "--"}  Y ${playerY?.let { format0(it) } ?: "--"}  ·  ${locations.size} LOCATIONS",
+            color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("X " + db.value("map.world.player.x").asNumberText() + "  Y " + db.value("map.world.player.y").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
-            Spacer(Modifier.weight(1f))
             Text("ZOOM -", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom - .25f).coerceAtLeast(.75f) }.padding(5.dp))
             Text("ZOOM +", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom + .25f).coerceAtMost(4f) }.padding(5.dp))
+            Spacer(Modifier.weight(1f))
             Text("REQUEST MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { scope.launch { connection.sendRPC(13, emptyList()) } }.padding(5.dp))
         }
+        Column(Modifier.fillMaxWidth().weight(.55f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("WORLD LOCATION REGISTER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+            if (locations.isEmpty()) Text("NO LOCATION RECORDS RECEIVED FROM GAME", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            locations.take(100).forEach { point ->
+                Text(point.first.uppercase() + "  ·  X " + format0(point.second) + "  Y " + format0(point.third),
+                    color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            }
+        }
+        if (db.localMap != null) Text("LOCAL MAP SNAPSHOT DATA RECEIVED · PIXEL RENDERING REQUIRES PLATFORM MAP DECODER",
+            color = Phosphor.copy(alpha = .5f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
     }
 }
 
@@ -753,7 +787,7 @@ fun QuestPanel(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
     }
 }
 
-private fun PipboyValue?.asString() = (this as? PipboyValue.StringValue)?.value
+private fun PipboyValue?.asDouble(): Double? = when (this) {\n    is PipboyValue.Float32 -> value.toDouble()\n    is PipboyValue.Int32 -> value.toDouble()\n    is PipboyValue.UInt32 -> value.toDouble()\n    is PipboyValue.UInt8 -> value.toDouble()\n    is PipboyValue.Int8 -> value.toDouble()\n    else -> null\n}\n\nprivate fun PipboyValue?.asString() = (this as? PipboyValue.StringValue)?.value
 private fun PipboyValue?.asBool() = (this as? PipboyValue.Bool)?.value
 private fun PipboyValue?.asUInt(): Long? = when (this) {
     is PipboyValue.UInt32 -> value
