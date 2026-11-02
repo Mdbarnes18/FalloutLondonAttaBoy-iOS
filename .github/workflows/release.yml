@@ -138,6 +138,13 @@ jobs:
 
           `SHA256SUMS-$VERSION.txt` contains SHA-256 checksums for all eight installable packages.
 
+          ## Version 1.01 changes
+
+          - **iOS:** retain the canonical 1024×1024 app artwork in the asset catalog; marketing version and build number are updated to 1.01 / 101.
+          - **Android:** use the repository's canonical `Assets/AppIcon-Original.png` through the Gradle icon-copy task; remove the obsolete CI download from the retired companion repository; Android version code advances to 146.
+          - **Windows and Linux:** native package metadata now follows the shared `VERSION` file (1.01) rather than a stale hard-coded desktop package version. Both builds continue using the canonical repository artwork.
+          - No gameplay or companion-protocol behavior changes are included in this packaging release.
+
           ## Included capabilities
 
           - STAT, inventory, DATA, MAP and RADIO companion interface foundations.

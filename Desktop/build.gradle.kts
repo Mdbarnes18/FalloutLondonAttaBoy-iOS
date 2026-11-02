@@ -22,7 +22,7 @@ compose.desktop {
         mainClass = "com.falloutlondon.companion.desktop.MainKt"
         nativeDistributions {
             packageName = "Fallout London Companion"
-            packageVersion = "1.45.0"
+            packageVersion = version
             description = "Fallout London Companion desktop client"
             vendor = "Fallout London Companion"
             targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.AppImage)

@@ -9,7 +9,7 @@ android {
         applicationId = "com.falloutlondon.companion"
         minSdk = 26
         targetSdk = 37
-        versionCode = 145
+        versionCode = 146
         versionName = file("../../VERSION").readText().trim()
     }
     buildFeatures { compose = true }
