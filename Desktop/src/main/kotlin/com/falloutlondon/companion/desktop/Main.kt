@@ -117,7 +117,7 @@ fun FalloutLondonApp() {
         AttaBoyShell {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("ATTA-BOY // " + if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FALLOUT LONDON", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Text((if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FOLON") + " // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
                         modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
