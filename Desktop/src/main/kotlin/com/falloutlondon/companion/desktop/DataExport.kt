@@ -11,10 +11,15 @@ fun PipboyValue.displayText(): String = when (this) {
     PipboyValue.Null -> "null"
 }
 
-fun PipboyDatabase.exportText(): String {
+fun PipboyDatabase.exportText(gameWorld: String, dataSource: String): String {
     val out = StringBuilder()
-    out.appendLine("FALLOUT: LONDON ATTA-BOY DATA EXPORT")
-    out.appendLine("Generated from the current live database")
+    out.appendLine("ATTA-BOY DIAGNOSTIC DATA EXPORT")
+    out.appendLine("Game world: $gameWorld")
+    out.appendLine("Data source: $dataSource")
+    out.appendLine("Generated UTC epoch ms: ${System.currentTimeMillis()}")
+    out.appendLine("Database nodes: ${nodes.size}")
+    out.appendLine("Decoded value paths: ${flattenedValues().size}")
+    out.appendLine("Review before sharing: player, inventory, quest and save-specific data may be present.")
     out.appendLine()
 
     fun valueText(value: PipboyValue?): String = when (value) {
