@@ -1,5 +1,6 @@
 package com.falloutlondon.companion
 
+import androidx.compose.runtime.mutableStateListOf
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -144,7 +145,7 @@ object PipboyPacketDecoder {
         private set
 
     var loggingEnabled: Boolean = false
-    val updateLog: MutableList<String> = mutableListOf()
+    val updateLog = mutableStateListOf<String>()
 
     private fun appendLog(message: String) {
         if (!loggingEnabled) return
