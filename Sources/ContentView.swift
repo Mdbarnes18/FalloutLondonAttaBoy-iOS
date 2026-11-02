@@ -35,15 +35,13 @@ struct ContentView: View {
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(1)
                     .foregroundStyle(PipTheme.amberDim)
+                Button { showingSettings = true } label: {
+                    Image(systemName: "gearshape").font(.system(size: 11, weight: .bold)).foregroundStyle(PipTheme.amber)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.top, 8)
             .padding(.bottom, 7)
-            .overlay(alignment: .trailing) {
-                Button { showingSettings = true } label: {
-                    Image(systemName: "gearshape").font(.system(size: 11, weight: .bold)).foregroundStyle(PipTheme.amber)
-                }.padding(.trailing, 14)
-            }
 
             HStack(spacing: 7) {
                 Circle()
