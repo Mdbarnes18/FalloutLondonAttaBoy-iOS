@@ -97,21 +97,15 @@ fun FalloutLondonApp() {
         }
 
         delay(450)
-        boot = "ATTA-BOY
-POSITIONING..."
+        boot = "ATTA-BOY\nPOSITIONING..."
         delay(700)
         boot = "DISPLAY INITIALIZING..."
         delay(650)
-        boot = "ATTA-BOY SYSTEM
-INITIALIZING"
+        boot = "ATTA-BOY SYSTEM\nINITIALIZING"
         delay(900)
-        boot = "SYSTEM CHECK ........ OK
-MEMORY ............. OK
-LINK ............... OK"
+        boot = "SYSTEM CHECK ........ OK\nMEMORY ............. OK\nLINK ............... OK"
         delay(750)
-        boot = "SYSTEM READY
-
-WITH THANKS TO TEAM FOLON"
+        boot = "SYSTEM READY\n\nWITH THANKS TO TEAM FOLON"
         delay(1400)
         boot = "READY"
 
