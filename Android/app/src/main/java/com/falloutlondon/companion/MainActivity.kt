@@ -550,7 +550,7 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
                 color = Phosphor,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 8.sp,
-                modifier = Modifier.clickable { saveLauncher.launch("Fallout-London-Data.txt") }.padding(5.dp)
+                modifier = Modifier.clickable { saveLauncher.launch("Atta-Boy-$selectedGame-Diagnostics.txt") }.padding(5.dp)
             )
         }
 
