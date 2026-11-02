@@ -80,8 +80,11 @@ struct ContentView: View {
                     .tabItem { Label("RADIO", systemImage: "dot.radiowaves.left.and.right") }
                     .tag(AppTab.radio)
                 QuestView()
-                    .tabItem { Label("DATA", systemImage: "text.book.closed") }
+                    .tabItem { Label("QUESTS", systemImage: "text.book.closed") }
                     .tag(AppTab.quests)
+                DataBrowserView()
+                    .tabItem { Label("DATA", systemImage: "point.3.connected.trianglepath.dotted") }
+                    .tag(AppTab.data)
             }
             .tint(PipTheme.amber)
             .toolbarBackground(PipTheme.panel, for: .tabBar)
