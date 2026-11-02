@@ -112,6 +112,7 @@ class ProtocolContractTest {
         assertTrue(export.contains("Game world: COMMONWEALTH"))
         assertTrue(export.contains("Data source: LIVE SESSION"))
         assertTrue(export.contains("playerinfo.currhp = 87.5"))
+        assertTrue(export.contains("playerinfo [node=10, type=Object"))
         assertTrue(export.contains("Decoded value paths: 1"))
     }
     private fun u16(value: Int) = byteArrayOf(value.toByte(), (value shr 8).toByte())
