@@ -5,8 +5,8 @@ struct LimbConditionPanel: View {
 
     private let regions = [
         ("HEAD", "HEAD"), ("TORSO", "TORSO"),
-        ("LEFT ARM", "L ARM"), ("RIGHT ARM", "R ARM"),
-        ("LEFT LEG", "L LEG"), ("RIGHT LEG", "R LEG")
+        ("LEFT ARM", "LEFT ARM"), ("RIGHT ARM", "RIGHT ARM"),
+        ("LEFT LEG", "LEFT LEG"), ("RIGHT LEG", "RIGHT LEG")
     ]
 
     private func value(_ key: String) -> Int? {
@@ -45,10 +45,10 @@ struct LimbConditionPanel: View {
                     region("RIGHT LEG")
                 }.frame(maxWidth: .infinity)
             }
-            ForEach(regions, id: \.0) { label, key in
-                if let current = value(key) {
+            ForEach(regions, id: \.0) { region in
+                if let current = value(region.1) {
                     HStack {
-                        Text(label).foregroundStyle(PipTheme.muted)
+                        Text(region.0).foregroundStyle(PipTheme.muted)
                         Spacer()
                         Text("\(current)%  //  \(state(current))")
                             .foregroundStyle(color(current))
