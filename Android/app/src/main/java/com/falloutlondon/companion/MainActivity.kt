@@ -387,15 +387,79 @@ fun StatusScreen(
             medical.threshold = value
             onThresholdChanged(value)
         }, valueRange = 0.10f..0.90f, steps = 15)
-        player.limbConditions.forEach { entry ->
-            Text(entry.key + "  " + (entry.value * 100.0).toInt() + "%", color = Phosphor.copy(alpha=.75f), fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-        }
+        LimbConditionPanel(player.limbConditions)
         if (player.activeEffects.isNotEmpty()) {
             Text("EFFECTS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
             player.activeEffects.forEach { effect ->
                 Text("• " + effect, color = Phosphor.copy(alpha=.8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
         }
+    }
+}
+
+@Composable
+fun LimbConditionPanel(conditions: Map<String, Double>) {
+    val regions = listOf(
+        "HEAD" to listOf("HEAD"),
+        "TORSO" to listOf("TORSO"),
+        "LEFT ARM" to listOf("LEFT ARM", "L ARM"),
+        "RIGHT ARM" to listOf("RIGHT ARM", "R ARM"),
+        "LEFT LEG" to listOf("LEFT LEG", "L LEG"),
+        "RIGHT LEG" to listOf("RIGHT LEG", "R LEG")
+    )
+    fun value(keys: List<String>) = keys.firstNotNullOfOrNull { conditions[it] }
+    fun status(v: Double) = when {
+        v <= 0.0 -> "CRIPPLED"
+        v < .25 -> "CRITICAL"
+        v < .50 -> "DAMAGED"
+        v < 1.0 -> "WOUNDED"
+        else -> "HEALTHY"
+    }
+    fun tint(v: Double) = if (v < .25) Color(0xFFFF6655) else if (v < .50) Color(0xFFFFB000) else Phosphor
+
+    Column(Modifier.fillMaxWidth().border(1.dp, Phosphor.copy(alpha = .35f)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Text("BODY // LIMB CONDITION", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Text("LIVE BODY-PART CONDITION · VALUES FROM GAME DATABASE", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("LEFT ARM", "LEFT LEG").forEach { label ->
+                LimbConditionCell(label, value(regions.first { it.first == label }.second), ::status, ::tint, Modifier.weight(1f))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LimbConditionCell("HEAD", value(listOf("HEAD")), ::status, ::tint, Modifier.fillMaxWidth())
+                LimbConditionCell("TORSO", value(listOf("TORSO")), ::status, ::tint, Modifier.fillMaxWidth())
+            }
+            listOf("RIGHT ARM", "RIGHT LEG").forEach { label ->
+                LimbConditionCell(label, value(regions.first { it.first == label }.second), ::status, ::tint, Modifier.weight(1f))
+            }
+        }
+        regions.forEach { (label, keys) ->
+            val current = value(keys)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(label, color = Phosphor.copy(alpha = .65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                Spacer(Modifier.weight(1f))
+                Text(current?.let { "${(it * 100).toInt()}%  //  ${status(it)}" } ?: "NO DATA",
+                    color = current?.let(::tint) ?: Phosphor.copy(alpha = .4f),
+                    fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LimbConditionCell(
+    label: String,
+    value: Double?,
+    status: (Double) -> String,
+    tint: (Double) -> Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier.border(1.dp, Phosphor.copy(alpha = .25f)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(label.replace("LEFT ", "L ").replace("RIGHT ", "R "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 6.sp)
+        Text(value?.let { "${(it * 100).toInt()}%" } ?: "--", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Box(Modifier.fillMaxWidth().height(4.dp).background(Phosphor.copy(alpha = .12f))) {
+            if (value != null) Box(Modifier.fillMaxWidth(value.coerceIn(0.0, 1.0).toFloat()).fillMaxHeight().background(tint(value)))
+        }
+        Text(value?.let(status) ?: "NO DATA", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
     }
 }
 
