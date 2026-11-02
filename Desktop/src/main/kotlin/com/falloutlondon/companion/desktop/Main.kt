@@ -64,6 +64,11 @@ fun FalloutLondonApp() {
         connection.onState = { state ->
             scope.launch {
                 connectionState = state
+                when {
+                    state == "CONNECTED" -> db.logConnectionEvent("New connection established.")
+                    state.startsWith("FAILED") -> db.logConnectionEvent("Connection Error: " + state.removePrefix("FAILED: "))
+                    state == "DISCONNECTED" -> db.logConnectionEvent("Connection Lost.")
+                }
                 if (state == "CONNECTED" && !demoMode) {
                     // A new TCP session starts a fresh live database stream.
                     // Drop stale values from the previous session before applying
@@ -561,11 +566,42 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
     var search by remember { mutableStateOf("") }
     var path by remember { mutableStateOf("") }
     var copied by remember { mutableStateOf(false) }
+    var loggerEnabled by remember { mutableStateOf(db.loggingEnabled) }
     val export = db.exportText(selectedGame, if (demoMode) "DEMO / CACHED" else "LIVE SESSION")
+    val loggerExport = db.updateLog.joinToString("\n")
     Column(Modifier.fillMaxSize().padding(2.dp)) {
         QuestPanel(db, connection, scope)
         DataSummarySection(db, "NOTES", "notes"); DataSummarySection(db, "STATISTICS", "stats")
         DataSummarySection(db, "WORKSHOP", "workshop"); DataSummarySection(db, "MISC", "misc")
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("DATA UPDATE LOGGER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+            Spacer(Modifier.weight(1f))
+            Text(if (loggerEnabled) "LOGGING ON" else "LOGGING OFF", color = Phosphor,
+                fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                modifier = Modifier.clickable { loggerEnabled = !loggerEnabled; db.loggingEnabled = loggerEnabled }.padding(5.dp))
+            Text("CLEAR", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                modifier = Modifier.clickable { db.clearUpdateLog() }.padding(5.dp))
+            Text("SAVE LOG", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                modifier = Modifier.clickable {
+                    val chooser = JFileChooser()
+                    chooser.dialogTitle = "Save Atta-Boy Update Log"
+                    chooser.selectedFile = java.io.File("Atta-Boy-$selectedGame-Update-Log.txt")
+                    chooser.fileFilter = FileNameExtensionFilter("Text files", "txt")
+                    if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile.writeText(loggerExport)
+                }.padding(5.dp))
+        }
+        Text("${db.updateLog.size} EVENTS · MAX 10,000", color = Phosphor.copy(alpha = .6f),
+            fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+        Column(Modifier.fillMaxWidth().height(112.dp).verticalScroll(rememberScrollState())) {
+            if (db.updateLog.isEmpty()) {
+                Text("ENABLE LOGGING TO CAPTURE LIVE RECORD UPDATES", color = Phosphor.copy(alpha = .45f),
+                    fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            } else {
+                db.updateLog.takeLast(250).asReversed().forEach { entry ->
+                    Text(entry, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+                }
+            }
+        }
         Text(if (demoMode) "STALE-CACHE / DEMO DATA: LIVE ACTIONS DISABLED" else "LIVE DATA: ACTION FEEDBACK FOLLOWS VERIFIED RESPONSES", color=Phosphor.copy(alpha=.6f), fontFamily=FontFamily.Monospace, fontSize=8.sp)
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
             Text(if(demoMode)"DATA BROWSER / DEMO" else "DATA BROWSER",color=Phosphor,fontFamily=FontFamily.Monospace,fontSize=17.sp);Spacer(Modifier.weight(1f))
