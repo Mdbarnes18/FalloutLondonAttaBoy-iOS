@@ -30,15 +30,14 @@ struct InventoryView: View {
                     detail: item.detail ?? "", equipped: item.equipped,
                     favorite: item.isFavorited, legendary: item.legendary, gameItem: item)
             }
-        } else if state.gameWorld == .london {
-            source = InventoryItem.samples.map { item in
+        } else {
+            let samples = state.gameWorld == .london ? InventoryItem.samples : InventoryItem.commonwealthSamples
+            source = samples.map { item in
                 InventoryRow(id: item.id, name: item.name, category: item.category,
                     count: 1, weight: item.weight, value: item.value,
                     detail: item.detail, equipped: state.equippedItemIDs.contains(item.id),
                     favorite: false, legendary: false, gameItem: nil)
             }
-        } else {
-            source = []
         }
         return source.filter {
             (category == .all || $0.category == category) &&
@@ -52,7 +51,7 @@ struct InventoryView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 15) {
-                    ScreenHeader(title: "INVENTORY", subtitle: state.isLiveData ? "LIVE GAME INVENTORY" : (state.gameWorld == .london ? "DEMO INVENTORY PREVIEW" : "COMMONWEALTH · AWAITING LIVE DATA"))
+                    ScreenHeader(title: "INVENTORY", subtitle: state.isLiveData ? "LIVE GAME INVENTORY" : (state.demoModeEnabled ? "DEMO INVENTORY PREVIEW" : "AWAITING LIVE GAME DATA"))
                     PipPanel(title: "CARRY WEIGHT") {
                         HStack {
                             Text(String(format: "%.1f / %.1f", state.carriedWeight, state.maxWeight))
@@ -81,7 +80,7 @@ struct InventoryView: View {
                     }
                     PipPanel(title: "ITEMS // \(rows.count)") {
                         if rows.isEmpty {
-                            Text(state.isLiveData ? "NO ITEMS IN THIS CATEGORY" : (state.gameWorld == .london ? "CONNECT TO FALLOUT TO LOAD YOUR INVENTORY" : "CONNECT TO FALLOUT 4 TO LOAD YOUR INVENTORY"))
+                            Text(state.isLiveData ? "NO ITEMS IN THIS CATEGORY" : (state.demoModeEnabled ? "PREVIEW INVENTORY · DEMO MODE" : "CONNECT TO THE SELECTED GAME TO LOAD INVENTORY"))
                                 .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         }
                         ForEach(rows) { row in
