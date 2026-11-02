@@ -144,13 +144,13 @@ fun FalloutLondonApp() {
                             },
                             onDemoMode = { enabled ->
                                 demoMode = enabled; saveDemoMode(enabled, selectedGame)
-                                if (enabled) { scope.launch { connection.disconnect() }; loadCachedDatabase(db); player = PlayerState.from(db, player); inventory.refresh(db) }
+                                if (enabled) { scope.launch { connection.disconnect() }; db.reset(); loadCachedDatabase(db, selectedGame); player = PlayerState.from(db, player); inventory.refresh(db) }
                                 else scope.launch { runCatching { connection.discoverAndConnect() } }
                             },
                             onAutoStimpak = { enabled -> autoStimpak = enabled; medical.autoStimpakEnabled = enabled; saveAutoStimpak(enabled) },
                             onThreshold = { value -> stimpakThreshold = value; medical.threshold = value; saveAutoStimpakThreshold(value) },
                             onReconnect = { scope.launch { connection.disconnect(); if (!demoMode) runCatching { connection.discoverAndConnect() } } },
-                            onClearCache = { clearCachedDatabase(); db.reset(); player = PlayerState(); inventory.refresh(db) }
+                            onClearCache = { clearCachedDatabase(selectedGame); db.reset(); player = PlayerState(); inventory.refresh(db) }
                         )
                     } else when (selectedTab) {
                         MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold,
@@ -174,10 +174,11 @@ fun FalloutLondonApp() {
                         )
                         MainTab.DATA -> DataScreen(db, connection, scope, demoMode) { enabled ->
                             demoMode = enabled
-                            saveDemoMode(enabled)
+                            saveDemoMode(enabled, selectedGame)
                             if (enabled) {
                                 scope.launch { connection.disconnect() }
-                                loadCachedDatabase(db)
+                                db.reset()
+                                loadCachedDatabase(db, selectedGame)
                                 player = PlayerState.from(db, player)
                                 inventory.refresh(db)
                             } else {
