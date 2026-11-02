@@ -76,8 +76,17 @@ struct LiveDatabaseEntry: Identifiable {
     var id: String { path }
 }
 
+enum GameWorld: String, CaseIterable, Identifiable {
+    case london = "FALLOUT_LONDON"
+    case commonwealth = "COMMONWEALTH"
+    var id: String { rawValue }
+    var title: String { self == .london ? "FALLOUT: LONDON" : "FALLOUT 4 // COMMONWEALTH" }
+    var mapTitle: String { self == .london ? "LONDON MAP" : "COMMONWEALTH MAP" }
+}
+
 @MainActor
 final class AttaBoyState: ObservableObject {
+    @Published private(set) var gameWorld: GameWorld = GameWorld(rawValue: UserDefaults.standard.string(forKey: "gameWorld") ?? "") ?? .london
     @Published var selectedTab: AppTab = .status
     @Published var selectedDistrictID = District.all[0].id
     @Published var selectedCategory: ItemCategory = .all
@@ -182,6 +191,25 @@ final class AttaBoyState: ObservableObject {
         case .reconnecting: "RECONNECTING"
         case .failed(let reason): "CONNECTION ERROR · \(reason.uppercased())"
         }
+    }
+
+    func selectGameWorld(_ world: GameWorld) {
+        guard gameWorld != world else { return }
+        gameWorld = world
+        UserDefaults.standard.set(world.rawValue, forKey: "gameWorld")
+        connectionService.disconnect()
+        connectionState = .disconnected
+        isLiveData = false
+        database.reset()
+        liveInventory = []
+        liveQuests = []
+        liveRadioStations = []
+        liveMapLocations = []
+        livePerks = []
+        databaseEntries = []
+        localMap = nil
+        playerPosition = nil
+        lastActionStatus = "GAME PROFILE CHANGED · RECONNECT TO THE SELECTED GAME"
     }
 
     func discoverGame() {
