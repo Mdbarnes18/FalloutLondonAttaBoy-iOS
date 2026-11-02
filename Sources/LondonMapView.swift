@@ -35,7 +35,7 @@ struct LondonMapView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 15) {
-                    ScreenHeader(title: "LONDON MAP", subtitle: "LIVE GAME WORLD & LOCAL MAP")
+                    ScreenHeader(title: state.gameWorld.mapTitle, subtitle: "LIVE GAME WORLD & LOCAL MAP")
                     PipPanel(title: "PLAYER POSITION") {
                         if let position = state.playerPosition {
                             HStack {
@@ -44,7 +44,7 @@ struct LondonMapView: View {
                                 coordinate("ROT", value: position.rotation)
                             }
                         } else {
-                            Text(state.isLiveData ? "PLAYER POSITION NOT PRESENT IN CURRENT DATABASE" : "CONNECT TO FALLOUT TO READ PLAYER POSITION")
+                            Text(state.isLiveData ? "PLAYER POSITION NOT PRESENT IN CURRENT DATABASE" : "CONNECT TO THE SELECTED GAME TO READ PLAYER POSITION")
                                 .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         }
                         HStack(spacing: 7) {
@@ -98,7 +98,7 @@ struct LondonMapView: View {
                     }
 
                     PipPanel(title: "LIVE WORLD PLOT // \(plottedLocations.count) LOCATIONS") {
-                        Text("POSITIONS AND MARKERS COME FROM THE CONNECTED GAME DATABASE. THIS IS A COORDINATE PLOT, NOT A GEOGRAPHICALLY VERIFIED LONDON BASEMAP.")
+                        Text("POSITIONS AND MARKERS COME FROM THE SELECTED GAME DATABASE. THIS IS A LIVE COORDINATE PLOT; AN OFFLINE WORLD BASEMAP IS NOT BUNDLED.")
                             .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                             .fixedSize(horizontal: false, vertical: true)
                         if let bounds = worldBounds {
@@ -163,7 +163,7 @@ struct LondonMapView: View {
                             Text("X \(Int(bounds.minX)) … \(Int(bounds.maxX))     Y \(Int(bounds.minY)) … \(Int(bounds.maxY))")
                                 .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                         } else {
-                            Text(state.isLiveData ? "THE GAME HAS NOT PROVIDED WORLD LOCATION COORDINATES YET." : "CONNECT TO FALLOUT TO POPULATE THE WORLD PLOT.")
+                            Text(state.isLiveData ? "THE GAME HAS NOT PROVIDED WORLD LOCATION COORDINATES YET." : "CONNECT TO THE SELECTED GAME TO POPULATE THE WORLD PLOT.")
                                 .font(.system(size: 9, design: .monospaced)).foregroundStyle(PipTheme.muted)
                                 .frame(maxWidth: .infinity, minHeight: 150)
                         }
