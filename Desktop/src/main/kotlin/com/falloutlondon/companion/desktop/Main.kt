@@ -716,7 +716,7 @@ private fun format2(value: Float) = String.format("%.2f", value)
 
 private fun loadSelectedGame(): String = prefs.get("selectedGame", "LONDON")
 private fun saveSelectedGame(value: String) { prefs.put("selectedGame", value) }
-private fun loadDemoMode(game: String)=prefs.getBoolean("demoMode_$game",true)
+private fun loadDemoMode(game: String)=prefs.getBoolean("demoMode_$game",false)
 private fun saveDemoMode(v:Boolean, game: String){prefs.putBoolean("demoMode_$game",v)}
 private fun loadAutoStimpak()=prefs.getBoolean("autoStimpak",true)
 private fun saveAutoStimpak(v:Boolean){prefs.putBoolean("autoStimpak",v)}
