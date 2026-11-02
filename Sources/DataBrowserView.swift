@@ -29,29 +29,7 @@ struct DataBrowserView: View {
         }.sorted { $0.path.localizedCaseInsensitiveCompare($1.path) == .orderedAscending }
     }
 
-    private var diagnosticText: String {
-        var lines = [
-            "ATTA-BOY DIAGNOSTIC DATA EXPORT",
-            "Generated: \(ISO8601DateFormatter().string(from: Date()))",
-            "Game world: \(state.gameWorld.title)",
-            "Connection: \(state.connectionLabel)",
-            "Data source: \(state.demoModeEnabled ? "DEMO / CACHED" : (state.isLiveData ? "LIVE GAME" : "NO LIVE SESSION"))",
-            "Server version: \(state.serverVersion.isEmpty ? "unknown" : state.serverVersion)",
-            "Server language: \(state.serverLanguage.isEmpty ? "unknown" : state.serverLanguage)",
-            "Database values: \(state.databaseEntries.count)",
-            "",
-            "DATABASE TREE",
-            "=============="
-        ]
-        lines += state.databaseEntries.sorted { $0.path.localizedCaseInsensitiveCompare($1.path) == .orderedAscending }
-            .map { "\($0.path) = \($0.value.replacingOccurrences(of: "\n", with: "\\n"))" }
-        lines += [
-            "",
-            "END OF EXPORT",
-            "This file may contain player names, quest state, inventory, location and other save-specific data. Review it before posting publicly."
-        ]
-        return lines.joined(separator: "\n")
-    }
+    private var diagnosticText: String { state.diagnosticExportText }
 
     var body: some View {
         NavigationStack {
