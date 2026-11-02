@@ -169,6 +169,16 @@ final class AttaBoyState: ObservableObject {
         }
     }
 
+    var diagnosticExportText: String {
+        let source = demoModeEnabled ? "DEMO / CACHED" : (isLiveData ? "LIVE GAME" : "NO LIVE SESSION")
+        return database.diagnosticExportText(
+            gameWorld: gameWorld.title,
+            dataSource: source,
+            serverVersion: serverVersion,
+            serverLanguage: serverLanguage
+        )
+    }
+
     var selectedDistrict: District {
         District.all.first(where: { $0.id == selectedDistrictID }) ?? District.all[0]
     }
