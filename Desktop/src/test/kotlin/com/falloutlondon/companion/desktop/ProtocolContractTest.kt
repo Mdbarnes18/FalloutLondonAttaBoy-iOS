@@ -102,6 +102,19 @@ class ProtocolContractTest {
         assertEquals(PipboyValue.UInt32(3L), database.value("x"))
     }
 
+    @Test fun diagnosticExportIncludesWorldSourceAndCurrentTreeValues() {
+        val database = PipboyDatabase()
+        database.apply(PipboyUpdate.Data(listOf(
+            PipboyRecord.Object(0L, listOf("playerinfo" to 10L), emptyList()),
+            PipboyRecord.Object(10L, listOf("currhp" to 11L), emptyList()),
+            PipboyRecord.Value(11L, PipboyValue.Float32(87.5f))
+        )))
+        val export = database.exportText("COMMONWEALTH", "LIVE SESSION")
+        assertTrue(export.contains("Game world: COMMONWEALTH"))
+        assertTrue(export.contains("Data source: LIVE SESSION"))
+        assertTrue(export.contains("playerinfo.currhp = 87.5"))
+        assertTrue(export.contains("Decoded value paths: 1"))
+    }
     private fun u16(value: Int) = byteArrayOf(value.toByte(), (value shr 8).toByte())
     private fun u32(value: Long) = byteArrayOf(value.toByte(), (value shr 8).toByte(), (value shr 16).toByte(), (value shr 24).toByte())
 }
