@@ -31,7 +31,7 @@ struct ContentView: View {
                     .tracking(2)
                     .foregroundStyle(PipTheme.amber)
                 Spacer()
-                Text("FALLOUT // \\(state.gameWorld == .london ? "LONDON" : "COMMONWEALTH")")
+                Text("FALLOUT // \(state.gameWorld == .london ? "LONDON" : "COMMONWEALTH")")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(1)
                     .foregroundStyle(PipTheme.amberDim)
@@ -108,7 +108,7 @@ struct ContentView: View {
                     Section("MEDICAL") {
                         Toggle("AUTO-STIMPAK", isOn: Binding(get: { state.autoStimpakEnabled }, set: { state.setAutoStimpakEnabled($0) }))
                         VStack(alignment: .leading) {
-                            Text("AUTO-STIMPAK THRESHOLD · \\(Int(state.autoStimpakThreshold * 100))%")
+                            Text("AUTO-STIMPAK THRESHOLD · \(Int(state.autoStimpakThreshold * 100))%")
                             Slider(value: Binding(get: { state.autoStimpakThreshold }, set: { state.setAutoStimpakThreshold($0) }), in: 0.10...0.90, step: 0.05)
                         }
                     }
