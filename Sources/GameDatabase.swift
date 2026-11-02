@@ -103,35 +103,89 @@ final class PipboyDatabase {
         }
     }
 
-    func apply(_ update: PipboyUpdate) {
+    func apply(_ update: PipboyUpdate) -> [String] {
+        var events: [String] = []
         switch update {
         case .data(let data):
-            for record in data.records { apply(record) }
+            for record in data.records { events.append(contentsOf: apply(record)) }
         case .localMap(let map):
             localMap = map
-        case .commandResponse, .connectionAccepted, .connectionRefused:
-            break
-        case .unknown:
-            break
+            events.append("Updated Local Map: \(map.width)x\(map.height)")
+        case .commandResponse:
+            events.append("Command response received.")
+        case .connectionAccepted:
+            events.append("Connection handshake received.")
+        case .connectionRefused:
+            events.append("Connection refused by game.")
+        case .unknown(let type, let payload):
+            events.append("Unknown packet type \(type) (\(payload.count) bytes)")
         }
+        return events
     }
 
-    func apply(_ record: PipboyRecord) {
+    private func apply(_ record: PipboyRecord) -> [String] {
         switch record {
         case .value(let id, let value):
+            let action = nodes[id] == nil ? "New" : "Updated"
+            let path = pathForNode(id) ?? "node\(id)"
             node(id).value = value
+            let type: String
+            let text: String
+            switch value {
+            case .null: type = "null"; text = "null"
+            case .bool(let v): type = "bool"; text = String(v)
+            case .int8(let v): type = "int8"; text = String(v)
+            case .uint8(let v): type = "uint8"; text = String(v)
+            case .int32(let v): type = "int32"; text = String(v)
+            case .uint32(let v): type = "uint32"; text = String(v)
+            case .float32(let v): type = "float"; text = String(v)
+            case .string(let v):
+                type = "string"
+                text = v.replacingOccurrences(of: "\n", with: "\\n").replacingOccurrences(of: "\r", with: "\\r")
+            }
+            return ["\(action) Record(\(id)): \(path) => \(type)( \(text) )"]
         case .array(let id, let children):
+            let action = nodes[id] == nil ? "New" : "Updated"
+            let path = pathForNode(id) ?? "node\(id)"
             let n = node(id)
             n.arrayChildren = children
             n.value = nil
+            return ["\(action) Record(\(id)): \(path) => array( \(children.count) children )"]
         case .object(let id, let added, let removed):
             let n = node(id)
-            for item in added { n.objectChildren[item.key] = item.nodeID }
+            let path = pathForNode(id) ?? "node\(id)"
+            var events: [String] = []
             for childID in removed {
+                let removedPath = pathForNode(childID) ?? "node\(childID)"
+                events.append("Deleted Record(\(childID)): \(removedPath) => removed")
                 n.objectChildren = n.objectChildren.filter { $0.value != childID }
             }
+            for item in added {
+                let action = nodes[item.nodeID] == nil ? "New" : "Updated"
+                n.objectChildren[item.key] = item.nodeID
+                events.append("\(action) Record(\(item.nodeID)): \(path).\(item.key) => object child")
+            }
             n.value = nil
+            events.append("Updated Record(\(id)): \(path) => object( +\(added.count)/-\(removed.count) )")
+            return events
         }
+    }
+
+    private func pathForNode(_ target: UInt32) -> String? {
+        var visited = Set<UInt32>()
+        func walk(_ id: UInt32, _ path: String, _ depth: Int) -> String? {
+            if id == target { return path.isEmpty ? "ROOT" : path }
+            guard depth < 64, visited.insert(id).inserted, let current = nodes[id] else { return nil }
+            for (key, childID) in current.objectChildren {
+                let childPath = path.isEmpty ? key : "\(path).\(key)"
+                if let found = walk(childID, childPath, depth + 1) { return found }
+            }
+            for (index, childID) in current.arrayChildren.enumerated() {
+                if let found = walk(childID, "\(path)[\(index)]", depth + 1) { return found }
+            }
+            return nil
+        }
+        return walk(rootID, "", 0)
     }
 
     func value<T>(_ path: String, as type: T.Type = T.self) -> T? {
