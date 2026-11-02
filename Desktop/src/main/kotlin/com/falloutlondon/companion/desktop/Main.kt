@@ -172,7 +172,7 @@ fun FalloutLondonApp() {
                                 inventory.refresh(db)
                             }
                         )
-                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode) { enabled ->
+                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode, selectedGame) { enabled ->
                             demoMode = enabled
                             saveDemoMode(enabled, selectedGame)
                             if (enabled) {
@@ -493,11 +493,11 @@ fun InventoryScreen(store: InventoryStore, category: InventoryCategory, onCatego
 }
 
 @Composable
-fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, onDemoMode: (Boolean) -> Unit) {
+fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, selectedGame: String, onDemoMode: (Boolean) -> Unit) {
     var search by remember { mutableStateOf("") }
     var path by remember { mutableStateOf("") }
     var copied by remember { mutableStateOf(false) }
-    val export = remember(db.nodes.size, db.localMap) { db.exportText() }
+    val export = db.exportText(selectedGame, if (demoMode) "DEMO / CACHED" else "LIVE SESSION")
     Column(Modifier.fillMaxSize().padding(2.dp)) {
         QuestPanel(db, connection, scope)
         DataSummarySection(db, "NOTES", "notes"); DataSummarySection(db, "STATISTICS", "stats")
@@ -507,7 +507,7 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
             Text(if(demoMode)"DATA BROWSER / DEMO" else "DATA BROWSER",color=Phosphor,fontFamily=FontFamily.Monospace,fontSize=17.sp);Spacer(Modifier.weight(1f))
             Text(if(copied)"COPIED" else "COPY ALL",color=Phosphor,fontFamily=FontFamily.Monospace,fontSize=8.sp,modifier=Modifier.clickable{Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(export),null);copied=true}.padding(5.dp))
             Text("SAVE TXT",color=Phosphor,fontFamily=FontFamily.Monospace,fontSize=8.sp,modifier=Modifier.clickable{
-                val chooser=JFileChooser();chooser.dialogTitle="Save Fallout London Data";chooser.selectedFile=java.io.File("Fallout-London-Data.txt");chooser.fileFilter=FileNameExtensionFilter("Text files","txt")
+                val chooser=JFileChooser();chooser.dialogTitle="Save Atta-Boy Diagnostics";chooser.selectedFile=java.io.File("Atta-Boy-$selectedGame-Diagnostics.txt");chooser.fileFilter=FileNameExtensionFilter("Text files","txt")
                 if(chooser.showSaveDialog(null)==JFileChooser.APPROVE_OPTION)chooser.selectedFile.writeText(export)
             }.padding(5.dp))
         }
