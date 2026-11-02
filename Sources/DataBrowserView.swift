@@ -20,7 +20,9 @@ struct DataBrowserView: View {
     @EnvironmentObject private var state: AttaBoyState
     @State private var search = ""
     @State private var showingExporter = false
+    @State private var showingLogExporter = false
     @State private var exportError: String?
+    @State private var logExportError: String?
 
     private var filteredEntries: [LiveDatabaseEntry] {
         guard !search.isEmpty else { return state.databaseEntries.sorted { $0.path.localizedCaseInsensitiveCompare($1.path) == .orderedAscending } }
@@ -53,6 +55,40 @@ struct DataBrowserView: View {
                         }
                         Text("The export includes decoded game data and may contain personal save details. Review before sharing.")
                             .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                    }
+                    PipPanel(title: "DATA UPDATE LOGGER") {
+                        Toggle("CAPTURE LIVE UPDATES", isOn: Binding(
+                            get: { state.dataUpdateLoggerEnabled },
+                            set: { state.setDataUpdateLoggerEnabled($0) }
+                        ))
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .tint(PipTheme.amber)
+                        HStack {
+                            Text("\(state.dataUpdateLog.count) / 10,000 EVENTS")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .foregroundStyle(PipTheme.muted)
+                            Spacer()
+                            Button("CLEAR") { state.clearDataUpdateLog() }
+                                .font(.system(size: 8, weight: .black, design: .monospaced))
+                            Button("SAVE LOG") { showingLogExporter = true }
+                                .font(.system(size: 8, weight: .black, design: .monospaced))
+                                .disabled(state.dataUpdateLog.isEmpty)
+                        }
+                        if let logExportError {
+                            Text(logExportError).font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.danger)
+                        }
+                        if state.dataUpdateLog.isEmpty {
+                            Text("ENABLE LOGGING TO CAPTURE LIVE RECORD UPDATES")
+                                .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        } else {
+                            ForEach(state.dataUpdateLog.suffix(250).reversed(), id: \.self) { entry in
+                                Text(entry)
+                                    .font(.system(size: 7, design: .monospaced))
+                                    .foregroundStyle(PipTheme.pale)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
                     }
                     TextField("SEARCH PATH OR VALUE", text: $search)
                         .font(.system(size: 10, design: .monospaced)).padding(9)
@@ -92,6 +128,15 @@ struct DataBrowserView: View {
             ) { result in
                 if case .failure(let error) = result { exportError = error.localizedDescription }
                 else { exportError = nil }
+            }
+            .fileExporter(
+                isPresented: $showingLogExporter,
+                document: DiagnosticTextDocument(text: state.dataUpdateLog.joined(separator: "\n")),
+                contentType: .plainText,
+                defaultFilename: "Atta-Boy-Update-Log-\(Date.now.formatted(.iso8601.year().month().day())).txt"
+            ) { result in
+                if case .failure(let error) = result { logExportError = error.localizedDescription }
+                else { logExportError = nil }
             }
         }
         .tint(PipTheme.amber)
