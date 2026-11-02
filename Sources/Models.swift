@@ -56,6 +56,17 @@ struct InventoryItem: Identifiable {
         .init(id: "radaway", name: "RADAWAY", detail: "Reduces radiation", category: .aid, weight: 0.5, value: 40, symbol: "pills"),
         .init(id: "ticket", name: "UNDERGROUND TICKET", detail: "Probably expired", category: .misc, weight: 0.1, value: 2, symbol: "ticket")
     ]
+
+    static let commonwealthSamples: [InventoryItem] = [
+        .init(id: "10mm-pistol", name: "10MM PISTOL", detail: "Standard-issue sidearm · 10mm", category: .weapons, weight: 4.0, value: 50, symbol: "scope"),
+        .init(id: "pipe-rifle", name: "PIPE RIFLE", detail: "Improvised receiver · .38", category: .weapons, weight: 6.0, value: 35, symbol: "scope"),
+        .init(id: "combat-armor", name: "COMBAT ARMOR", detail: "Standard combat chest piece", category: .apparel, weight: 15.0, value: 90, symbol: "tshirt"),
+        .init(id: "vault-suit", name: "VAULT 111 JUMPSUIT", detail: "Blue-and-yellow vault issue", category: .apparel, weight: 4.0, value: 25, symbol: "tshirt"),
+        .init(id: "fo4-stimpak", name: "STIMPAK", detail: "Restores health", category: .aid, weight: 0.1, value: 48, symbol: "cross.case"),
+        .init(id: "fo4-radaway", name: "RADAWAY", detail: "Reduces radiation", category: .aid, weight: 0.1, value: 80, symbol: "pills"),
+        .init(id: "fusion-core", name: "FUSION CORE", detail: "Power armor energy source", category: .ammo, weight: 4.0, value: 100, symbol: "battery.100"),
+        .init(id: "prewar-money", name: "PRE-WAR MONEY", detail: "Old-world currency", category: .junk, weight: 0.0, value: 8, symbol: "banknote")
+    ]
 }
 
 struct District: Identifiable {
