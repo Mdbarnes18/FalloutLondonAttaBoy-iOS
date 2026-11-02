@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Commonwealth support
+
+- Add a persistent Fallout: London / Fallout 4 Commonwealth selector to iOS, Android, Windows and Linux without changing ATTA-Boy branding.
+- Clear stale live database state on profile changes; Android and desktop reconnect automatically when live mode is active.
+- Give Android and desktop the same live world-coordinate map plot and location register as iOS.
+- Keep London demo inventory samples out of Commonwealth mode.
+- Document Commonwealth Cartography as a research reference. Its game-derived raster and marker artwork are not redistributed because the upstream GPL license does not establish rights to Bethesda-owned assets.
+- Live-game validation and a redistributable offline Commonwealth basemap remain outstanding; see Documentation/MULTI_GAME_SUPPORT.md.
+
 ## 1.01 — 2026-11-01
 
 - Align iOS marketing/build metadata, Android version code, and desktop native package metadata with the shared 1.01 release version.
