@@ -388,18 +388,18 @@ fun StatusScreen(
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.clickable { playPackSound(context, "button_confirm"); scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Image(painterResource(R.drawable.med_stimpak), contentDescription = null, modifier = Modifier.size(20.dp))
+                PackAssetIcon("med_stimpak", Modifier.size(20.dp), "Stimpak")
                 Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
             Row(Modifier.clickable { playPackSound(context, "button_confirm"); scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Image(painterResource(R.drawable.med_radaway), contentDescription = null, modifier = Modifier.size(20.dp))
+                PackAssetIcon("med_radaway", Modifier.size(20.dp), "RadAway")
                 Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(painterResource(R.drawable.med_autodoc), contentDescription = null, modifier = Modifier.size(24.dp))
+            PackAssetIcon("med_autodoc", Modifier.size(24.dp), "AutoDoc visual reference")
             Text("AUTODOC", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
-            Image(painterResource(R.drawable.med_doctors_bag), contentDescription = null, modifier = Modifier.size(24.dp))
+            PackAssetIcon("med_doctors_bag", Modifier.size(24.dp), "Doctor's Bag visual reference")
             Text("DOCTOR'S BAG", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         }
         Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE", color = Phosphor.copy(alpha=.45f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
