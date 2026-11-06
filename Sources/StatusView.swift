@@ -117,10 +117,10 @@ struct StatusView: View {
                     }
                     PipPanel(title: "MEDICAL") {
                         HStack(spacing: 8) {
-                            Button { state.useStimpak() } label: {
+                            Button { AttaBoyAudio.shared.play("button_confirm"); state.useStimpak() } label: {
                                 Label("STIMPAK", image: "pack_med_stimpak")
                             }
-                            Button { state.useRadAway() } label: {
+                            Button { AttaBoyAudio.shared.play("button_confirm"); state.useRadAway() } label: {
                                 Label("RADAWAY", image: "pack_med_radaway")
                             }
                         }
