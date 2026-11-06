@@ -68,7 +68,6 @@ fun FalloutLondonApp() {
     var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
     var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
     var showingSettings by rememberSaveable { mutableStateOf(false) }
-    var manualHost by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
@@ -254,6 +253,7 @@ fun SettingsPanel(
     onSelectedGame: (String) -> Unit, onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
     onReconnect: () -> Unit, onConnectHost: (String) -> Unit, onClearCache: () -> Unit
 ) {
+    var manualHost by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Text("GAME WORLD", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
