@@ -21,10 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import org.jetbrains.skia.Data
-import org.jetbrains.skia.Size
 import org.jetbrains.skia.Surface
 import org.jetbrains.skia.svg.SVGDOM
-import org.jetbrains.skia.toComposeImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -351,7 +350,7 @@ private fun DesktopAssetImage(name: String, modifier: Modifier = Modifier) {
                 .getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg") ?: return@runCatching null
             val bytes = stream.use { it.readBytes() }
             val svg = SVGDOM(Data.makeFromBytes(bytes))
-            svg.setContainerSize(Size(64f, 64f))
+            svg.setContainerSize(64f, 64f)
             val surface = Surface.makeRasterN32Premul(64, 64)
             svg.render(surface.canvas)
             surface.makeImageSnapshot().toComposeImageBitmap()
