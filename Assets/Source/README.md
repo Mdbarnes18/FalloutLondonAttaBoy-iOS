@@ -10,7 +10,7 @@ all be copied into every app bundle.
 From the repository root, run:
 
 ```bash
-./scripts/import-complete-asset-pack.sh ~/Downloads/ATTA-Boy-Complete-Asset-Pack.zip
+bash scripts/import-complete-asset-pack.sh ~/Downloads/ATTA-Boy-Complete-Asset-Pack.zip
 ```
 
 The script extracts the archive, preserving its internal directory layout, into:
@@ -24,7 +24,7 @@ SHA-256 checksum. It rejects unsafe archive paths and symlinks, and it will not
 overwrite an existing import unless explicitly asked:
 
 ```bash
-./scripts/import-complete-asset-pack.sh --replace /path/to/ATTA-Boy-Complete-Asset-Pack.zip
+bash scripts/import-complete-asset-pack.sh --replace /path/to/ATTA-Boy-Complete-Asset-Pack.zip
 ```
 
 ## Integration policy
