@@ -1,0 +1,369 @@
+{
+  "note": "Insets are in logical units (pt / dp / px). Multiply by the export scale for pixel insets.",
+  "assets": {
+    "panel_clean": {
+      "logicalSize": [
+        128,
+        128
+      ],
+      "insets": {
+        "left": 20,
+        "top": 20,
+        "right": 20,
+        "bottom": 20
+      },
+      "mode": "9-part"
+    },
+    "panel_worn": {
+      "logicalSize": [
+        128,
+        128
+      ],
+      "insets": {
+        "left": 20,
+        "top": 20,
+        "right": 20,
+        "bottom": 20
+      },
+      "mode": "9-part"
+    },
+    "panel_inset": {
+      "logicalSize": [
+        128,
+        128
+      ],
+      "insets": {
+        "left": 16,
+        "top": 16,
+        "right": 16,
+        "bottom": 16
+      },
+      "mode": "9-part"
+    },
+    "panel_warning": {
+      "logicalSize": [
+        128,
+        128
+      ],
+      "insets": {
+        "left": 20,
+        "top": 26,
+        "right": 20,
+        "bottom": 20
+      },
+      "mode": "9-part"
+    },
+    "panel_notification": {
+      "logicalSize": [
+        128,
+        64
+      ],
+      "insets": {
+        "left": 22,
+        "top": 16,
+        "right": 12,
+        "bottom": 12
+      },
+      "mode": "9-part"
+    },
+    "frame_screen_clean": {
+      "logicalSize": [
+        256,
+        192
+      ],
+      "insets": {
+        "left": 40,
+        "top": 40,
+        "right": 40,
+        "bottom": 40
+      },
+      "mode": "9-part"
+    },
+    "frame_screen_worn": {
+      "logicalSize": [
+        256,
+        192
+      ],
+      "insets": {
+        "left": 40,
+        "top": 40,
+        "right": 40,
+        "bottom": 40
+      },
+      "mode": "9-part"
+    },
+    "frame_map_local": {
+      "logicalSize": [
+        256,
+        256
+      ],
+      "insets": {
+        "left": 40,
+        "top": 40,
+        "right": 40,
+        "bottom": 40
+      },
+      "mode": "9-part"
+    },
+    "frame_map_global": {
+      "logicalSize": [
+        256,
+        256
+      ],
+      "insets": {
+        "left": 24,
+        "top": 24,
+        "right": 24,
+        "bottom": 24
+      },
+      "mode": "9-part"
+    },
+    "button_normal": {
+      "logicalSize": [
+        96,
+        40
+      ],
+      "insets": {
+        "left": 14,
+        "top": 14,
+        "right": 14,
+        "bottom": 14
+      },
+      "mode": "9-part"
+    },
+    "button_pressed": {
+      "logicalSize": [
+        96,
+        40
+      ],
+      "insets": {
+        "left": 14,
+        "top": 14,
+        "right": 14,
+        "bottom": 14
+      },
+      "mode": "9-part"
+    },
+    "button_selected": {
+      "logicalSize": [
+        96,
+        40
+      ],
+      "insets": {
+        "left": 14,
+        "top": 14,
+        "right": 14,
+        "bottom": 14
+      },
+      "mode": "9-part"
+    },
+    "button_disabled": {
+      "logicalSize": [
+        96,
+        40
+      ],
+      "insets": {
+        "left": 14,
+        "top": 14,
+        "right": 14,
+        "bottom": 14
+      },
+      "mode": "9-part"
+    },
+    "button_normal_worn": {
+      "logicalSize": [
+        96,
+        40
+      ],
+      "insets": {
+        "left": 16,
+        "top": 14,
+        "right": 16,
+        "bottom": 14
+      },
+      "mode": "9-part"
+    },
+    "tab_active": {
+      "logicalSize": [
+        96,
+        36
+      ],
+      "insets": {
+        "left": 14,
+        "top": 12,
+        "right": 14,
+        "bottom": 0
+      },
+      "mode": "9-part"
+    },
+    "tab_inactive": {
+      "logicalSize": [
+        96,
+        36
+      ],
+      "insets": {
+        "left": 14,
+        "top": 12,
+        "right": 14,
+        "bottom": 0
+      },
+      "mode": "9-part"
+    },
+    "progress_bar_track": {
+      "logicalSize": [
+        128,
+        16
+      ],
+      "insets": {
+        "left": 8,
+        "top": 0,
+        "right": 8,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "progress_bar_fill": {
+      "logicalSize": [
+        128,
+        16
+      ],
+      "insets": {
+        "left": 8,
+        "top": 0,
+        "right": 8,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "scrollbar_track_v": {
+      "logicalSize": [
+        12,
+        64
+      ],
+      "insets": {
+        "left": 0,
+        "top": 6,
+        "right": 0,
+        "bottom": 6
+      },
+      "mode": "vertical-3-part"
+    },
+    "scrollbar_thumb_v": {
+      "logicalSize": [
+        12,
+        40
+      ],
+      "insets": {
+        "left": 0,
+        "top": 6,
+        "right": 0,
+        "bottom": 6
+      },
+      "mode": "vertical-3-part"
+    },
+    "scrollbar_track_h": {
+      "logicalSize": [
+        64,
+        12
+      ],
+      "insets": {
+        "left": 6,
+        "top": 0,
+        "right": 6,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "scrollbar_thumb_h": {
+      "logicalSize": [
+        40,
+        12
+      ],
+      "insets": {
+        "left": 6,
+        "top": 0,
+        "right": 6,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "divider_h": {
+      "logicalSize": [
+        128,
+        8
+      ],
+      "insets": {
+        "left": 12,
+        "top": 0,
+        "right": 12,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "divider_v": {
+      "logicalSize": [
+        8,
+        128
+      ],
+      "insets": {
+        "left": 0,
+        "top": 12,
+        "right": 0,
+        "bottom": 12
+      },
+      "mode": "vertical-3-part"
+    },
+    "divider_london": {
+      "logicalSize": [
+        256,
+        20
+      ],
+      "insets": {
+        "left": 100,
+        "top": 0,
+        "right": 100,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "divider_commonwealth": {
+      "logicalSize": [
+        256,
+        20
+      ],
+      "insets": {
+        "left": 100,
+        "top": 0,
+        "right": 100,
+        "bottom": 0
+      },
+      "mode": "horizontal-3-part"
+    },
+    "selection_highlight": {
+      "logicalSize": [
+        96,
+        32
+      ],
+      "insets": {
+        "left": 12,
+        "top": 10,
+        "right": 12,
+        "bottom": 10
+      },
+      "mode": "9-part"
+    },
+    "label_plate": {
+      "logicalSize": [
+        96,
+        32
+      ],
+      "insets": {
+        "left": 12,
+        "top": 8,
+        "right": 12,
+        "bottom": 8
+      },
+      "mode": "9-part"
+    }
+  }
+}

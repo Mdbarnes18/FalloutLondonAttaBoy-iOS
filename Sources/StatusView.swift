@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusView: View {
     @EnvironmentObject private var state: AttaBoyState
+    @AppStorage("attaBoy.lastGameHost") private var savedHostAddress = ""
     @State private var hostAddress = ""
 
     private var connectionColor: Color {
@@ -34,6 +35,7 @@ struct StatusView: View {
                             Button("AUTO DISCOVER") { state.discoverGame() }
                                 .font(.system(size: 8, weight: .black, design: .monospaced))
                                 .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                                .disabled(state.demoModeEnabled)
                             Button("DISCONNECT") { state.disconnectGame() }
                                 .font(.system(size: 8, weight: .bold, design: .monospaced))
                                 .buttonStyle(.bordered).tint(PipTheme.amber)
@@ -44,11 +46,23 @@ struct StatusView: View {
                                 .keyboardType(.decimalPad)
                                 .font(.system(size: 10, design: .monospaced)).padding(7)
                                 .overlay(Rectangle().stroke(PipTheme.amberDim.opacity(0.45)))
-                            Button("CONNECT") { state.connectToGame(host: hostAddress) }
+                            Button("CONNECT") {
+                                let address = hostAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !address.isEmpty else { return }
+                                savedHostAddress = address
+                                state.connectToGame(host: address)
+                            }
                                 .font(.system(size: 8, weight: .black, design: .monospaced))
                                 .buttonStyle(.bordered).tint(PipTheme.amber)
+                                .disabled(state.demoModeEnabled || hostAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
-                        Text("SAME PRIVATE LAN REQUIRED · ENABLE THE GAME-SIDE COMPANION SERVICE. iOS BROADCAST DISCOVERY NEEDS APPLE MULTICAST ENTITLEMENT; MANUAL IP CONNECTION DOES NOT.")
+                        if state.demoModeEnabled {
+                            Text("DEMO MODE IS ACTIVE · DISABLE DEMO MODE IN SETTINGS TO CONNECT TO A LIVE GAME.")
+                                .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.amber)
+                        } else {
+                            Text("SAME PRIVATE LAN REQUIRED · ENABLE THE GAME-SIDE COMPANION SERVICE. iOS BROADCAST DISCOVERY NEEDS APPLE MULTICAST ENTITLEMENT; MANUAL IP CONNECTION DOES NOT.")
+                                .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
+                        }
                             .font(.system(size: 8, design: .monospaced)).foregroundStyle(PipTheme.muted)
                     }
                     PipPanel(title: "VITAL SIGNS") {
@@ -116,12 +130,25 @@ struct StatusView: View {
                         }
                     }
                     PipPanel(title: "MEDICAL") {
-                        HStack {
-                            Button("STIMPAK") { state.useStimpak() }
-                            Button("RADAWAY") { state.useRadAway() }
+                        HStack(spacing: 8) {
+                            Button { AttaBoyAudio.shared.play("button_confirm"); state.useStimpak() } label: {
+                                Label("STIMPAK", image: "pack_med_stimpak")
+                            }
+                            Button { AttaBoyAudio.shared.play("button_confirm"); state.useRadAway() } label: {
+                                Label("RADAWAY", image: "pack_med_radaway")
+                            }
                         }
                         .font(.system(size: 9, weight: .black, design: .monospaced))
                         .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                        HStack(spacing: 18) {
+                            Label("AUTODOC", image: "pack_med_autodoc")
+                            Label("DOCTOR'S BAG", image: "pack_med_doctors_bag")
+                        }
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(PipTheme.muted)
+                        Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE")
+                            .font(.system(size: 6, design: .monospaced))
+                            .foregroundStyle(PipTheme.muted)
                         Toggle("AUTO-STIMPAK", isOn: Binding(
                             get: { state.autoStimpakEnabled },
                             set: { state.setAutoStimpakEnabled($0) }
@@ -156,6 +183,11 @@ struct StatusView: View {
             }
             .background(PipTheme.background)
             .toolbar(.hidden, for: .navigationBar)
+        }
+        .onAppear {
+            if hostAddress.isEmpty {
+                hostAddress = savedHostAddress.isEmpty ? state.connectionHost : savedHostAddress
+            }
         }
     }
 }

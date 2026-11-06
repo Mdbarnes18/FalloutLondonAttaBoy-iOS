@@ -1,5 +1,6 @@
 package com.falloutlondon.companion.desktop
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +19,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import org.jetbrains.skia.Data
+import org.jetbrains.skia.Surface
+import org.jetbrains.skia.svg.SVGDOM
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -124,8 +130,9 @@ fun FalloutLondonApp() {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text((if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FOLON") + " // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
+                    DesktopAssetImage(if (selectedGame == "COMMONWEALTH") "world_commonwealth" else "world_london", Modifier.size(18.dp))
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
-                        modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
+                        modifier = Modifier.clickable { DesktopAudio.play("button_confirm"); showingSettings = !showingSettings }.padding(5.dp))
                 }
                 ConnectionStatusBanner(connectionState, demoMode)
                 CrtFrame {
@@ -155,6 +162,7 @@ fun FalloutLondonApp() {
                             onAutoStimpak = { enabled -> autoStimpak = enabled; medical.autoStimpakEnabled = enabled; saveAutoStimpak(enabled) },
                             onThreshold = { value -> stimpakThreshold = value; medical.threshold = value; saveAutoStimpakThreshold(value) },
                             onReconnect = { scope.launch { connection.disconnect(); if (!demoMode) runCatching { connection.discoverAndConnect() } } },
+                            onConnectHost = { host -> if (!demoMode) scope.launch { connection.disconnect(); runCatching { connection.connect(host) } } },
                             onClearCache = { clearCachedDatabase(selectedGame); db.reset(); player = PlayerState(); inventory.refresh(db) }
                         )
                     } else when (selectedTab) {
@@ -202,7 +210,7 @@ fun FalloutLondonApp() {
                     MainTab.entries.forEach { tab ->
                         Text(
                             text = tab.label,
-                            modifier = Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
+                            modifier = Modifier.weight(1f).clickable { DesktopAudio.play("menu_navigate"); showingSettings = false; selectedTab = tab },
                             color = if (selectedTab == tab) Phosphor else Color.Gray,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp
@@ -226,8 +234,9 @@ fun FalloutLondonApp() {
 fun SettingsPanel(
     demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String, selectedGame: String,
     onSelectedGame: (String) -> Unit, onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
-    onReconnect: () -> Unit, onClearCache: () -> Unit
+    onReconnect: () -> Unit, onConnectHost: (String) -> Unit, onClearCache: () -> Unit
 ) {
+    var manualHost by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Text("GAME WORLD", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
@@ -242,13 +251,16 @@ fun SettingsPanel(
         Text(connectionState, color = Phosphor.copy(alpha = .75f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
         Text("RECONNECT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
             modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { onReconnect() }.padding(6.dp))
+        TextField(value = manualHost, onValueChange = { manualHost = it }, label = { Text("GAME PC IP ADDRESS") }, singleLine = true)
+        Text("CONNECT TO PC", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+            modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { if (manualHost.isNotBlank()) onConnectHost(manualHost.trim()) }.padding(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("DEMO / CACHED DATA", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f)); Switch(checked = demoMode, onCheckedChange = onDemoMode)
         }
         Text("DISPLAY & FEEDBACK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Text("CRT SCANLINES / AUDIO / HAPTICS", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text("Preferences and hardware feedback boundaries are scaffolded; platform playback/haptic integration remains pending.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Text("Interface sound effects are enabled. Haptic feedback is not currently implemented on this platform.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
@@ -336,6 +348,28 @@ fun CrtFrame(content: @Composable () -> Unit) {
 }
 
 @Composable
+private fun DesktopAssetImage(name: String, modifier: Modifier = Modifier) {
+    val platformFolder = if (System.getProperty("os.name", "").lowercase().contains("win")) "windows" else "linux"
+    val bitmap = remember(name, platformFolder) {
+        runCatching {
+            val stream = Thread.currentThread().contextClassLoader
+                .getResourceAsStream("assets/atta-boy/$platformFolder/pack_$name.svg")
+                ?: Thread.currentThread().contextClassLoader.getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg")
+                ?: return@runCatching null
+            val bytes = stream.use { it.readBytes() }
+            val svg = SVGDOM(Data.makeFromBytes(bytes))
+            svg.setContainerSize(64f, 64f)
+            val surface = Surface.makeRasterN32Premul(64, 64)
+            svg.render(surface.canvas)
+            surface.makeImageSnapshot().toComposeImageBitmap()
+        }.getOrNull()
+    }
+    if (bitmap != null) {
+        Image(bitmap = bitmap, contentDescription = null, modifier = modifier, colorFilter = ColorFilter.tint(Phosphor))
+    }
+}
+
+@Composable
 fun StatusScreen(
     player: PlayerState,
     medical: MedicalController,
@@ -361,11 +395,22 @@ fun StatusScreen(
         Text("CHARACTER REACTION  " + if (player.maxHp > 0 && player.hp / player.maxHp <= .2) "CRITICAL" else if (player.maxHp > 0 && player.hp / player.maxHp <= .5) "WARNING" else "NORMAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            DesktopAssetImage("med_autodoc", Modifier.size(24.dp))
+            Text("AUTODOC", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            DesktopAssetImage("med_doctors_bag", Modifier.size(24.dp))
+            Text("DOCTOR'S BAG", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE", color = Phosphor.copy(alpha=.45f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
-            Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
+            Row(Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                DesktopAssetImage("med_stimpak", Modifier.size(20.dp))
+                Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
+            Row(Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                DesktopAssetImage("med_radaway", Modifier.size(20.dp))
+                Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
@@ -447,8 +492,17 @@ private fun LimbConditionCell(
     tint: (Double) -> Color,
     modifier: Modifier = Modifier
 ) {
+    val assetPart = when (label) {
+        "HEAD" -> "head"
+        "TORSO" -> "torso"
+        "LEFT ARM" -> "arm_left"
+        "RIGHT ARM" -> "arm_right"
+        "LEFT LEG" -> "leg_left"
+        else -> "leg_right"
+    }
     Column(modifier.border(1.dp, Phosphor.copy(alpha = .25f)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(label.replace("LEFT ", "L ").replace("RIGHT ", "R "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 6.sp)
+        if (value != null) DesktopAssetImage("body_${assetPart}_${status(value).lowercase()}", Modifier.size(32.dp))
         Text(value?.let { "${(it * 100).toInt()}%" } ?: "--", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Box(Modifier.fillMaxWidth().height(4.dp).background(Phosphor.copy(alpha = .12f))) {
             if (value != null) Box(Modifier.fillMaxWidth(value.coerceIn(0.0, 1.0).toFloat()).fillMaxHeight().background(tint(value)))
