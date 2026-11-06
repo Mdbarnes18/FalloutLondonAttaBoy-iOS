@@ -51,9 +51,9 @@ struct ContentView: View {
                     .tracking(0.5).lineLimit(1).minimumScaleFactor(0.7)
                     .foregroundStyle(connectionColor)
                 Spacer(minLength: 0)
-                Text(state.isLiveData ? "LIVE" : "STANDBY")
+                Text(state.isLiveData ? "LIVE DATA" : (state.demoModeEnabled ? "DEMO MODE" : "STANDBY"))
                     .font(.system(size: 7, weight: .black, design: .monospaced))
-                    .foregroundStyle(state.isLiveData ? PipTheme.amber : PipTheme.muted)
+                    .foregroundStyle(state.isLiveData ? PipTheme.amber : (state.demoModeEnabled ? PipTheme.amberDim : PipTheme.muted))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
