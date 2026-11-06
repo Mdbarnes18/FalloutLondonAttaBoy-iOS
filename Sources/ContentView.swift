@@ -67,7 +67,7 @@ struct ContentView: View {
                 LondonMapView().tabItem { Label("MAP", image: "pack_nav_map") }.tag(AppTab.map)
                 InventoryView().tabItem { Label("ITEMS", image: "pack_nav_inventory") }.tag(AppTab.inventory)
                 RadioView().tabItem { Label("RADIO", image: "pack_nav_radio") }.tag(AppTab.radio)
-                QuestView().tabItem { Label("QUESTS", image: "map_quest") }.tag(AppTab.quests)
+                QuestView().tabItem { Label("QUESTS", image: "pack_map_quest") }.tag(AppTab.quests)
                 DataBrowserView().tabItem { Label("DATA", image: "pack_nav_data") }.tag(AppTab.data)
             }
             .tint(PipTheme.amber)
