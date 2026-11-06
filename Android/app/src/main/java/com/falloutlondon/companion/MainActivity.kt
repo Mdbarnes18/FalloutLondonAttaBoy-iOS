@@ -213,13 +213,22 @@ fun FalloutLondonApp() {
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     MainTab.entries.forEach { tab ->
-                        Text(
-                            text = tab.label,
-                            modifier = Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
-                            color = if (selectedTab == tab) Phosphor else Color.Gray,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp
-                        )
+                        val iconName = when (tab) {
+                            MainTab.STAT -> "nav_stat"
+                            MainTab.INV -> "nav_inventory"
+                            MainTab.DATA -> "nav_data"
+                            MainTab.MAP -> "nav_map"
+                            MainTab.RADIO -> "nav_radio"
+                        }
+                        Column(
+                            Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            PackAssetIcon(iconName, Modifier.size(18.dp), tab.label)
+                            Text(tab.label, color = if (selectedTab == tab) Phosphor else Color.Gray,
+                                fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                        }
                     }
                 }
 
