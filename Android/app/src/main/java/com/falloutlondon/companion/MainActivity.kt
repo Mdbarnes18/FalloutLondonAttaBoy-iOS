@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun FalloutLondonApp() {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val connection = remember { PipboyConnection() }
     val db = remember { PipboyDatabase() }
@@ -137,8 +138,9 @@ fun FalloutLondonApp() {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text((if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FOLON") + " // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
+                    PackAssetIcon(if (selectedGame == "COMMONWEALTH") "world_commonwealth" else "world_london", Modifier.size(18.dp), "Selected game world")
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
-                        modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
+                        modifier = Modifier.clickable { playPackSound(context, "button_confirm"); showingSettings = !showingSettings }.padding(5.dp))
                 }
                 ConnectionStatusBanner(connectionState, demoMode)
                 CrtFrame {
@@ -221,7 +223,7 @@ fun FalloutLondonApp() {
                             MainTab.RADIO -> "nav_radio"
                         }
                         Column(
-                            Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
+                            Modifier.weight(1f).clickable { playPackSound(context, "menu_navigate"); showingSettings = false; selectedTab = tab },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
