@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ScreenHeader: View {
+    @EnvironmentObject private var state: AttaBoyState
     let title: String
     var subtitle: String = "PERSONAL INFORMATION PROCESSOR"
     var body: some View {
@@ -8,7 +9,7 @@ struct ScreenHeader: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.system(size: 25, weight: .black, design: .monospaced)).tracking(2)
                 Spacer()
-                Text("LONDON // 202").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.amberDim)
+                Text(state.gameWorld == .london ? "LONDON // 202" : "COMMONWEALTH // 2287").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.amberDim)
             }
             Text(subtitle).font(.system(size: 9, weight: .medium, design: .monospaced)).tracking(1.6).foregroundStyle(PipTheme.muted)
             Rectangle().fill(PipTheme.amberDim).frame(height: 1).padding(.top, 7)
