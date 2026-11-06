@@ -49,6 +49,17 @@ struct InventoryView: View {
 
     private var selectedRow: InventoryRow? { rows.first { $0.id == selectedItemID } }
 
+
+    private func categoryAssetName(_ category: ItemCategory) -> String {
+        switch category {
+        case .weapons: "pack_cat_weapons"
+        case .apparel: "pack_cat_apparel"
+        case .aid: "pack_cat_aid"
+        case .ammo: "pack_cat_ammo"
+        case .misc, .junk, .mods, .all: "pack_cat_misc"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -88,8 +99,8 @@ struct InventoryView: View {
                         ForEach(rows) { row in
                             Button { selectedItemID = row.id } label: {
                                 HStack(spacing: 9) {
-                                    Image(systemName: symbol(for: row.category))
-                                        .frame(width: 23).foregroundStyle(PipTheme.amberDim)
+                                    Image(categoryAssetName(row.category))
+                                        .resizable().scaledToFit().frame(width: 23, height: 23).foregroundStyle(PipTheme.amberDim)
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(row.name.uppercased())
                                             .font(.system(size: 10, weight: .bold, design: .monospaced))
