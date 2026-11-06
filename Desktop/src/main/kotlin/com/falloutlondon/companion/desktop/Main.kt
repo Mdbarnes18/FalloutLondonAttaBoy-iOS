@@ -347,7 +347,8 @@ private fun DesktopAssetImage(name: String, modifier: Modifier = Modifier) {
     val bitmap = remember(name, platformFolder) {
         runCatching {
             val stream = Thread.currentThread().contextClassLoader
-                .getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg") ?: return@runCatching null
+                .getResourceAsStream("assets/atta-boy/$platformFolder/pack_$name.svg")
+                ?: .getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg") ?: return@runCatching null
             val bytes = stream.use { it.readBytes() }
             val svg = SVGDOM(Data.makeFromBytes(bytes))
             svg.setContainerSize(64f, 64f)
@@ -484,8 +485,17 @@ private fun LimbConditionCell(
     tint: (Double) -> Color,
     modifier: Modifier = Modifier
 ) {
+    val assetPart = when (label) {
+        "HEAD" -> "head"
+        "TORSO" -> "torso"
+        "LEFT ARM" -> "arm_left"
+        "RIGHT ARM" -> "arm_right"
+        "LEFT LEG" -> "leg_left"
+        else -> "leg_right"
+    }
     Column(modifier.border(1.dp, Phosphor.copy(alpha = .25f)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(label.replace("LEFT ", "L ").replace("RIGHT ", "R "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 6.sp)
+        if (value != null) DesktopAssetImage("body_${assetPart}_${status(value).lowercase()}", Modifier.size(32.dp))
         Text(value?.let { "${(it * 100).toInt()}%" } ?: "--", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Box(Modifier.fillMaxWidth().height(4.dp).background(Phosphor.copy(alpha = .12f))) {
             if (value != null) Box(Modifier.fillMaxWidth(value.coerceIn(0.0, 1.0).toFloat()).fillMaxHeight().background(tint(value)))
