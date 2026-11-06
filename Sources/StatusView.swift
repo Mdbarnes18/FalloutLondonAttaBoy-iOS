@@ -116,12 +116,25 @@ struct StatusView: View {
                         }
                     }
                     PipPanel(title: "MEDICAL") {
-                        HStack {
-                            Button("STIMPAK") { state.useStimpak() }
-                            Button("RADAWAY") { state.useRadAway() }
+                        HStack(spacing: 8) {
+                            Button { state.useStimpak() } label: {
+                                Label("STIMPAK", image: "med_stimpak")
+                            }
+                            Button { state.useRadAway() } label: {
+                                Label("RADAWAY", image: "med_radaway")
+                            }
                         }
                         .font(.system(size: 9, weight: .black, design: .monospaced))
                         .buttonStyle(.borderedProminent).tint(PipTheme.amber)
+                        HStack(spacing: 18) {
+                            Label("AUTODOC", image: "med_autodoc")
+                            Label("DOCTOR'S BAG", image: "med_doctors_bag")
+                        }
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(PipTheme.muted)
+                        Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE")
+                            .font(.system(size: 6, design: .monospaced))
+                            .foregroundStyle(PipTheme.muted)
                         Toggle("AUTO-STIMPAK", isOn: Binding(
                             get: { state.autoStimpakEnabled },
                             set: { state.setAutoStimpakEnabled($0) }

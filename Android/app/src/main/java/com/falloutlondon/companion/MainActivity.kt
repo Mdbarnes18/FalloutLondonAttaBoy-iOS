@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -372,12 +374,23 @@ fun StatusScreen(
         Text("CHARACTER REACTION  " + if (player.maxHp > 0 && player.hp / player.maxHp <= .2) "CRITICAL" else if (player.maxHp > 0 && player.hp / player.maxHp <= .5) "WARNING" else "NORMAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
-            Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Image(painterResource(R.drawable.med_stimpak), contentDescription = null, modifier = Modifier.size(20.dp))
+                Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
+            Row(Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Image(painterResource(R.drawable.med_radaway), contentDescription = null, modifier = Modifier.size(20.dp))
+                Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.med_autodoc), contentDescription = null, modifier = Modifier.size(24.dp))
+            Text("AUTODOC", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            Image(painterResource(R.drawable.med_doctors_bag), contentDescription = null, modifier = Modifier.size(24.dp))
+            Text("DOCTOR'S BAG", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE", color = Phosphor.copy(alpha=.45f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f))

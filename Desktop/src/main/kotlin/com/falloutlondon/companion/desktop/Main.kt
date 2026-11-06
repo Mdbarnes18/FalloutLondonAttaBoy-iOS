@@ -1,5 +1,6 @@
 package com.falloutlondon.companion.desktop
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +19,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import org.jetbrains.skia.Data
+import org.jetbrains.skia.Size
+import org.jetbrains.skia.Surface
+import org.jetbrains.skia.svg.SVGDOM
+import org.jetbrains.skia.toComposeImageBitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -336,6 +343,26 @@ fun CrtFrame(content: @Composable () -> Unit) {
 }
 
 @Composable
+private fun DesktopAssetImage(name: String, modifier: Modifier = Modifier) {
+    val platformFolder = if (System.getProperty("os.name", "").lowercase().contains("win")) "windows" else "linux"
+    val bitmap = remember(name, platformFolder) {
+        runCatching {
+            val stream = Thread.currentThread().contextClassLoader
+                .getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg") ?: return@runCatching null
+            val bytes = stream.use { it.readBytes() }
+            val svg = SVGDOM(Data.makeFromBytes(bytes))
+            svg.setContainerSize(Size(64f, 64f))
+            val surface = Surface.makeRasterN32Premul(64, 64)
+            svg.render(surface.canvas)
+            surface.makeImageSnapshot().toComposeImageBitmap()
+        }.getOrNull()
+    }
+    if (bitmap != null) {
+        Image(bitmap = bitmap, contentDescription = null, modifier = modifier, colorFilter = ColorFilter.tint(Phosphor))
+    }
+}
+
+@Composable
 fun StatusScreen(
     player: PlayerState,
     medical: MedicalController,
@@ -361,11 +388,22 @@ fun StatusScreen(
         Text("CHARACTER REACTION  " + if (player.maxHp > 0 && player.hp / player.maxHp <= .2) "CRITICAL" else if (player.maxHp > 0 && player.hp / player.maxHp <= .5) "WARNING" else "NORMAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            DesktopAssetImage("med_autodoc", Modifier.size(24.dp))
+            Text("AUTODOC", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            DesktopAssetImage("med_doctors_bag", Modifier.size(24.dp))
+            Text("DOCTOR'S BAG", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE", color = Phosphor.copy(alpha=.45f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
-            Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
+            Row(Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                DesktopAssetImage("med_stimpak", Modifier.size(20.dp))
+                Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
+            Row(Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                DesktopAssetImage("med_radaway", Modifier.size(20.dp))
+                Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
