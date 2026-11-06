@@ -73,6 +73,7 @@ struct ContentView: View {
             .tint(PipTheme.amber)
             .toolbarBackground(PipTheme.panel, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
+            .onChange(of: state.selectedTab) { _, _ in AttaBoyAudio.shared.play("menu_navigate") }
         }
         .background(PipTheme.background)
         .sheet(isPresented: $showingSettings) {
