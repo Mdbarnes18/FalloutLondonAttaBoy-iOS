@@ -60,6 +60,7 @@ fun FalloutLondonApp() {
     var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
     var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
     var showingSettings by rememberSaveable { mutableStateOf(false) }
+    var manualHost by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
@@ -162,6 +163,7 @@ fun FalloutLondonApp() {
                             onAutoStimpak = { enabled -> autoStimpak = enabled; medical.autoStimpakEnabled = enabled; saveAutoStimpak(enabled) },
                             onThreshold = { value -> stimpakThreshold = value; medical.threshold = value; saveAutoStimpakThreshold(value) },
                             onReconnect = { scope.launch { connection.disconnect(); if (!demoMode) runCatching { connection.discoverAndConnect() } } },
+                            onConnectHost = { host -> if (!demoMode) scope.launch { connection.disconnect(); runCatching { connection.connect(host) } } },
                             onClearCache = { clearCachedDatabase(selectedGame); db.reset(); player = PlayerState(); inventory.refresh(db) }
                         )
                     } else when (selectedTab) {
@@ -233,7 +235,7 @@ fun FalloutLondonApp() {
 fun SettingsPanel(
     demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String, selectedGame: String,
     onSelectedGame: (String) -> Unit, onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
-    onReconnect: () -> Unit, onClearCache: () -> Unit
+    onReconnect: () -> Unit, onConnectHost: (String) -> Unit, onClearCache: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
@@ -249,6 +251,9 @@ fun SettingsPanel(
         Text(connectionState, color = Phosphor.copy(alpha = .75f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
         Text("RECONNECT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
             modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { onReconnect() }.padding(6.dp))
+        TextField(value = manualHost, onValueChange = { manualHost = it }, label = { Text("GAME PC IP ADDRESS") }, singleLine = true)
+        Text("CONNECT TO PC", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+            modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { if (manualHost.isNotBlank()) onConnectHost(manualHost.trim()) }.padding(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("DEMO / CACHED DATA", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f)); Switch(checked = demoMode, onCheckedChange = onDemoMode)
