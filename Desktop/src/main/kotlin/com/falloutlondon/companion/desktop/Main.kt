@@ -348,7 +348,7 @@ private fun DesktopAssetImage(name: String, modifier: Modifier = Modifier) {
         runCatching {
             val stream = Thread.currentThread().contextClassLoader
                 .getResourceAsStream("assets/atta-boy/$platformFolder/pack_$name.svg")
-                ?: .getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg") ?: return@runCatching null
+                ?: Thread.currentThread().contextClassLoader.getResourceAsStream("assets/atta-boy/$platformFolder/$name.svg") ?: return@runCatching null
             val bytes = stream.use { it.readBytes() }
             val svg = SVGDOM(Data.makeFromBytes(bytes))
             svg.setContainerSize(64f, 64f)
