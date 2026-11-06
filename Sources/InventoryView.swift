@@ -52,11 +52,11 @@ struct InventoryView: View {
 
     private func categoryAssetName(_ category: ItemCategory) -> String {
         switch category {
-        case .weapons: "pack_cat_weapons"
-        case .apparel: "pack_cat_apparel"
-        case .aid: "pack_cat_aid"
-        case .ammo: "pack_cat_ammo"
-        case .misc, .junk, .mods, .all: "pack_cat_misc"
+        case .weapons: return "pack_cat_weapons"
+        case .apparel: return "pack_cat_apparel"
+        case .aid: return "pack_cat_aid"
+        case .ammo: return "pack_cat_ammo"
+        case .misc, .junk, .mods, .all: return "pack_cat_misc"
         }
     }
 
