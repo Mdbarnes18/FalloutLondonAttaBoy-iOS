@@ -272,7 +272,7 @@ fun SettingsPanel(
         }
         Text("DISPLAY & FEEDBACK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Text("CRT SCANLINES / AUDIO / HAPTICS", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text("Preferences and hardware feedback boundaries are scaffolded; platform playback/haptic integration remains pending.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Text("Interface sound effects are enabled. Haptic feedback is not currently implemented on this platform.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
