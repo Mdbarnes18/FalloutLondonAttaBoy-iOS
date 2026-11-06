@@ -130,8 +130,9 @@ fun FalloutLondonApp() {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text((if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FOLON") + " // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
+                    DesktopAssetImage(if (selectedGame == "COMMONWEALTH") "world_commonwealth" else "world_london", Modifier.size(18.dp))
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
-                        modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
+                        modifier = Modifier.clickable { DesktopAudio.play("button_confirm"); showingSettings = !showingSettings }.padding(5.dp))
                 }
                 ConnectionStatusBanner(connectionState, demoMode)
                 CrtFrame {
@@ -208,7 +209,7 @@ fun FalloutLondonApp() {
                     MainTab.entries.forEach { tab ->
                         Text(
                             text = tab.label,
-                            modifier = Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
+                            modifier = Modifier.weight(1f).clickable { DesktopAudio.play("menu_navigate"); showingSettings = false; selectedTab = tab },
                             color = if (selectedTab == tab) Phosphor else Color.Gray,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp
