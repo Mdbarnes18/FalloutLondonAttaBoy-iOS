@@ -1,50 +1,55 @@
-# Complete asset-pack import
+# Complete asset-pack import and integration
 
-The complete source pack is intentionally retained as source material rather than
-flattened into one shared runtime folder. It contains platform-specific exports,
-density variants, source artwork, textures, audio, and previews that should not
-all be copied into every app bundle.
+The complete generated pack is committed at `ATTA-Boy-Complete-Asset-Pack/`
+(6,345 files; 137,701,487 uncompressed bytes). Preserve this folder as the
+unaltered source of truth. Platform runtime resources are copied into their
+native project locations; the source archive is not flattened or discarded.
 
-## Import
+## Integration map
 
-From the repository root, run:
+- **iOS:** the supplied asset catalog is integrated under
+  `Assets.xcassets/Pack/`. Image-set directory names are prefixed with
+  `pack_` to avoid collisions with the approved app icon and existing assets.
+  The Xcode project includes the supplied WAV sound effects as bundle resources.
+- **Android:** vector drawables and WAV files are integrated under
+  `Android/app/src/main/res/drawable` and `res/raw`. `AssetPack.kt` exposes
+  namespaced image and audio helpers.
+- **Windows and Linux:** SVG artwork and WAV resources are integrated under
+  `Desktop/src/main/resources/assets/atta-boy/{windows,linux,audio}`.
+  Desktop asset loading selects the matching OS-specific SVG directory.
+- **All platforms:** the original generated pack remains available for audit,
+  source edits, density variants, and future integrations.
+
+## Import / refresh
+
+For a new checkout or a future replacement of the source archive, run from the
+repository root:
 
 ```bash
-bash scripts/import-complete-asset-pack.sh ~/Downloads/ATTA-Boy-Complete-Asset-Pack.zip
+bash scripts/import-complete-asset-pack.sh /path/to/ATTA-Boy-Complete-Asset-Pack.zip
 ```
 
-The script extracts the archive, preserving its internal directory layout, into:
-
-```
-Assets/Source/ATTA-Boy-Complete-Asset-Pack/
-```
-
-It also creates `ASSET-MANIFEST.json` with each imported path, byte size, and
-SHA-256 checksum. It rejects unsafe archive paths and symlinks, and it will not
-overwrite an existing import unless explicitly asked:
-
-```bash
-bash scripts/import-complete-asset-pack.sh --replace /path/to/ATTA-Boy-Complete-Asset-Pack.zip
-```
+The script preserves archive paths, rejects unsafe paths and symlinks, and writes
+an `ASSET-MANIFEST.json` with each extracted file's size and SHA-256 checksum.
+It refuses to overwrite an existing import unless `--replace` is supplied.
 
 ## Integration policy
 
-- Keep the complete original pack intact under `Assets/Source`.
-- Treat `iOS`, `Android`, `Windows`, `Linux`, and `SHARED` exports as source pools.
-- Integrate only the appropriate platform assets into runtime resource directories.
-- Prefer the platform's supplied density variants and native formats where present.
-- Keep original SVG/source artwork and previews available for future edits.
-- Do not replace the existing app icon or established app identity as part of a bulk import.
-- Do not bundle every source file into every platform binary. The repository can retain
-  the full pack while each platform build packages only resources it actually uses.
-- Review audio licensing/attribution and confirm formats before wiring sound playback.
+- Keep the complete original pack intact under `ATTA-Boy-Complete-Asset-Pack/`.
+- Bundle only the assets each platform actually uses; do not blindly package the
+  entire source archive into every application binary.
+- Keep the existing app icon and approved brand identity unchanged.
+- Use the supplied platform-specific formats and scale variants where applicable.
+- Treat AutoDoc and Doctor's Bag artwork as interface assets only. Do not imply
+  that a medical action works unless the game protocol action is implemented,
+  verified, and confirmed by a game response.
+- Verify all platform builds and inspect the rendered UI before merging the PR.
+- Review asset licensing and attribution requirements before public release.
 
-## Current status
+## Verification status
 
-The first six medical/world identity symbols are already represented in the app's
-platform resource trees and UI. This import utility is the reproducible handoff for
-bringing the remaining archive contents into the repository without losing source
-variants. The archive itself still needs to be extracted and committed from a
-machine that has the local ZIP and a Git remote connection; the GitHub connector
-used for this session can write repository text and Git objects but cannot stream
-a 128 MiB local binary archive into GitHub in one operation.
+The source pack and native resource copies are present in the development branch.
+The latest four-platform GitHub Actions run is currently the build gate for the
+latest integration commits. A successful build verifies packaging and compilation,
+not visual correctness or live-game protocol behavior. Those still require device
+and in-game validation.
