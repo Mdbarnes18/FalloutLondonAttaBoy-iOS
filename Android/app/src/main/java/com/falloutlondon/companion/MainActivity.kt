@@ -360,6 +360,7 @@ fun StatusScreen(
     onAutoStimpakChanged: (Boolean) -> Unit,
     onThresholdChanged: (Double) -> Unit
 ) {
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("STAT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Gauge("HP", player.hp, player.maxHp)
@@ -375,11 +376,11 @@ fun StatusScreen(
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.clickable { playPackSound(context, "button_confirm"); scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.med_stimpak), contentDescription = null, modifier = Modifier.size(20.dp))
                 Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
-            Row(Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.clickable { playPackSound(context, "button_confirm"); scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.med_radaway), contentDescription = null, modifier = Modifier.size(20.dp))
                 Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
