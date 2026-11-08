@@ -22,6 +22,24 @@ targets:
     sources:
       - path: Sources
       - path: Assets.xcassets
+    resources:
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/autodoc_complete.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/autodoc_start.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/button_cancel.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/button_confirm.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/connection_established.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/connection_lost.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/critical_warning.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/data_received.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/error.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/inventory_select.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/medical_treatment.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/medical_warning.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/menu_navigate.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/notification.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/terminal_shutdown.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/terminal_startup.wav
+      - path: ATTA-Boy-Complete-Asset-Pack/iOS/Sounds/warning.wav
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.coagulantchip.attaboy

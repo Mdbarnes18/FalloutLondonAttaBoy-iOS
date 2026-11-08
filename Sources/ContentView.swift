@@ -9,13 +9,10 @@ struct ContentView: View {
         ZStack {
             PipTheme.background.ignoresSafeArea()
             if bootComplete {
-                mainInterface
-                    .transition(.opacity)
+                mainInterface.transition(.opacity)
             } else {
                 AttaBoyBootView {
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        bootComplete = true
-                    }
+                    withAnimation(.easeInOut(duration: 0.35)) { bootComplete = true }
                 }
                 .transition(.opacity)
             }
@@ -31,6 +28,9 @@ struct ContentView: View {
                     .tracking(2)
                     .foregroundStyle(PipTheme.amber)
                 Spacer()
+                Image(state.gameWorld == .london ? "world_london" : "world_commonwealth")
+                    .resizable().scaledToFit().frame(width: 22, height: 22)
+                    .accessibilityHidden(true)
                 Text("FALLOUT // \(state.gameWorld == .london ? "LONDON" : "COMMONWEALTH")")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(1)
@@ -44,20 +44,16 @@ struct ContentView: View {
             .padding(.bottom, 7)
 
             HStack(spacing: 7) {
-                Circle()
-                    .fill(connectionColor)
-                    .frame(width: 7, height: 7)
+                Circle().fill(connectionColor).frame(width: 7, height: 7)
                     .shadow(color: connectionColor.opacity(0.6), radius: 4)
                 Text(state.connectionLabel)
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .tracking(0.5)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .tracking(0.5).lineLimit(1).minimumScaleFactor(0.7)
                     .foregroundStyle(connectionColor)
                 Spacer(minLength: 0)
-                Text(state.isLiveData ? "LIVE" : "STANDBY")
+                Text(state.isLiveData ? "LIVE DATA" : (state.demoModeEnabled ? "DEMO MODE" : "STANDBY"))
                     .font(.system(size: 7, weight: .black, design: .monospaced))
-                    .foregroundStyle(state.isLiveData ? PipTheme.amber : PipTheme.muted)
+                    .foregroundStyle(state.isLiveData ? PipTheme.amber : (state.demoModeEnabled ? PipTheme.amberDim : PipTheme.muted))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
@@ -67,28 +63,17 @@ struct ContentView: View {
             }
 
             TabView(selection: $state.selectedTab) {
-                StatusView()
-                    .tabItem { Label("STATUS", systemImage: "waveform.path.ecg") }
-                    .tag(AppTab.status)
-                LondonMapView()
-                    .tabItem { Label("MAP", systemImage: "map") }
-                    .tag(AppTab.map)
-                InventoryView()
-                    .tabItem { Label("ITEMS", systemImage: "backpack") }
-                    .tag(AppTab.inventory)
-                RadioView()
-                    .tabItem { Label("RADIO", systemImage: "dot.radiowaves.left.and.right") }
-                    .tag(AppTab.radio)
-                QuestView()
-                    .tabItem { Label("QUESTS", systemImage: "text.book.closed") }
-                    .tag(AppTab.quests)
-                DataBrowserView()
-                    .tabItem { Label("DATA", systemImage: "point.3.connected.trianglepath.dotted") }
-                    .tag(AppTab.data)
+                StatusView().tabItem { Label("STATUS", image: "pack_nav_stat") }.tag(AppTab.status)
+                LondonMapView().tabItem { Label("MAP", image: "pack_nav_map") }.tag(AppTab.map)
+                InventoryView().tabItem { Label("ITEMS", image: "pack_nav_inventory") }.tag(AppTab.inventory)
+                RadioView().tabItem { Label("RADIO", image: "pack_nav_radio") }.tag(AppTab.radio)
+                QuestView().tabItem { Label("QUESTS", image: "pack_map_quest") }.tag(AppTab.quests)
+                DataBrowserView().tabItem { Label("DATA", image: "pack_nav_data") }.tag(AppTab.data)
             }
             .tint(PipTheme.amber)
             .toolbarBackground(PipTheme.panel, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
+            .onChange(of: state.selectedTab) { _, _ in AttaBoyAudio.shared.play("menu_navigate") }
         }
         .background(PipTheme.background)
         .sheet(isPresented: $showingSettings) {
@@ -99,7 +84,8 @@ struct ContentView: View {
                             Text("Fallout: London").tag(GameWorld.london)
                             Text("Fallout 4 — Commonwealth").tag(GameWorld.commonwealth)
                         }
-                        Text("Changing worlds clears the current live session and cached map data. Reconnect after selecting the game.").font(.caption).foregroundStyle(.secondary)
+                        Text("Changing worlds clears the current live session and cached map data. Reconnect after selecting the game.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     Section("DEMO MODE") {
                         Toggle("DEMO / PREVIEW DATA", isOn: Binding(get: { state.demoModeEnabled }, set: { state.setDemoModeEnabled($0) }))
@@ -125,15 +111,10 @@ struct ContentView: View {
             }.tint(PipTheme.amber)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 15)
-                .stroke(PipTheme.amberDim.opacity(0.35), lineWidth: 1)
-                .padding(4)
-                .allowsHitTesting(false)
+            RoundedRectangle(cornerRadius: 15).stroke(PipTheme.amberDim.opacity(0.35), lineWidth: 1)
+                .padding(4).allowsHitTesting(false)
         }
-        .overlay {
-            ScanlineOverlay()
-                .allowsHitTesting(false)
-        }
+        .overlay { ScanlineOverlay().allowsHitTesting(false) }
     }
 
     private var connectionColor: Color {

@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -49,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun FalloutLondonApp() {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val connection = remember { PipboyConnection() }
     val db = remember { PipboyDatabase() }
@@ -135,8 +138,9 @@ fun FalloutLondonApp() {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text((if (selectedGame == "COMMONWEALTH") "COMMONWEALTH" else "FOLON") + " // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
+                    PackAssetIcon(if (selectedGame == "COMMONWEALTH") "world_commonwealth" else "world_london", Modifier.size(18.dp), "Selected game world")
                     Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
-                        modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
+                        modifier = Modifier.clickable { playPackSound(context, "button_confirm"); showingSettings = !showingSettings }.padding(5.dp))
                 }
                 ConnectionStatusBanner(connectionState, demoMode)
                 CrtFrame {
@@ -166,6 +170,7 @@ fun FalloutLondonApp() {
                             onAutoStimpak = { enabled -> autoStimpak = enabled; medical.autoStimpakEnabled = enabled; saveAutoStimpak(enabled) },
                             onThreshold = { value -> stimpakThreshold = value; medical.threshold = value; saveAutoStimpakThreshold(value) },
                             onReconnect = { scope.launch { connection.disconnect(); if (!demoMode) runCatching { connection.discoverAndConnect() } } },
+                            onConnectHost = { host -> if (!demoMode) scope.launch { connection.disconnect(); runCatching { connection.connect(host) } } },
                             onClearCache = { clearCachedDatabase(selectedGame); db.reset(); player = PlayerState(); inventory.refresh(db) }
                         )
                     } else when (selectedTab) {
@@ -211,13 +216,22 @@ fun FalloutLondonApp() {
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     MainTab.entries.forEach { tab ->
-                        Text(
-                            text = tab.label,
-                            modifier = Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
-                            color = if (selectedTab == tab) Phosphor else Color.Gray,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp
-                        )
+                        val iconName = when (tab) {
+                            MainTab.STAT -> "nav_stat"
+                            MainTab.INV -> "nav_inventory"
+                            MainTab.DATA -> "nav_data"
+                            MainTab.MAP -> "nav_map"
+                            MainTab.RADIO -> "nav_radio"
+                        }
+                        Column(
+                            Modifier.weight(1f).clickable { playPackSound(context, "menu_navigate"); showingSettings = false; selectedTab = tab },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            PackAssetIcon(iconName, Modifier.size(18.dp), tab.label)
+                            Text(tab.label, color = if (selectedTab == tab) Phosphor else Color.Gray,
+                                fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                        }
                     }
                 }
 
@@ -237,8 +251,9 @@ fun FalloutLondonApp() {
 fun SettingsPanel(
     demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String, selectedGame: String,
     onSelectedGame: (String) -> Unit, onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
-    onReconnect: () -> Unit, onClearCache: () -> Unit
+    onReconnect: () -> Unit, onConnectHost: (String) -> Unit, onClearCache: () -> Unit
 ) {
+    var manualHost by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Text("GAME WORLD", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
@@ -253,13 +268,16 @@ fun SettingsPanel(
         Text(connectionState, color = Phosphor.copy(alpha = .75f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
         Text("RECONNECT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
             modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { onReconnect() }.padding(6.dp))
+        TextField(value = manualHost, onValueChange = { manualHost = it }, label = { Text("GAME PC IP ADDRESS") }, singleLine = true)
+        Text("CONNECT TO PC", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+            modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { if (manualHost.isNotBlank()) onConnectHost(manualHost.trim()) }.padding(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("DEMO / CACHED DATA", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f)); Switch(checked = demoMode, onCheckedChange = onDemoMode)
         }
         Text("DISPLAY & FEEDBACK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Text("CRT SCANLINES / AUDIO / HAPTICS", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text("Preferences and hardware feedback boundaries are scaffolded; platform playback/haptic integration remains pending.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Text("Interface sound effects are enabled. Haptic feedback is not currently implemented on this platform.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
@@ -358,6 +376,7 @@ fun StatusScreen(
     onAutoStimpakChanged: (Boolean) -> Unit,
     onThresholdChanged: (Double) -> Unit
 ) {
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("STAT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Gauge("HP", player.hp, player.maxHp)
@@ -372,12 +391,23 @@ fun StatusScreen(
         Text("CHARACTER REACTION  " + if (player.maxHp > 0 && player.hp / player.maxHp <= .2) "CRITICAL" else if (player.maxHp > 0 && player.hp / player.maxHp <= .5) "WARNING" else "NORMAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
-            Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
-                modifier = Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.clickable { playPackSound(context, "button_confirm"); scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                PackAssetIcon("med_stimpak", Modifier.size(20.dp), "Stimpak")
+                Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
+            Row(Modifier.clickable { playPackSound(context, "button_confirm"); scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                PackAssetIcon("med_radaway", Modifier.size(20.dp), "RadAway")
+                Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            PackAssetIcon("med_autodoc", Modifier.size(24.dp), "AutoDoc visual reference")
+            Text("AUTODOC", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            PackAssetIcon("med_doctors_bag", Modifier.size(24.dp), "Doctor's Bag visual reference")
+            Text("DOCTOR'S BAG", color = Phosphor.copy(alpha=.65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        Text("VISUAL REFERENCES ONLY · THESE SYSTEMS ARE NOT YET ACTIVE", color = Phosphor.copy(alpha=.45f), fontFamily = FontFamily.Monospace, fontSize = 6.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f))
@@ -458,8 +488,17 @@ private fun LimbConditionCell(
     tint: (Double) -> Color,
     modifier: Modifier = Modifier
 ) {
+    val assetPart = when (label) {
+        "HEAD" -> "head"
+        "TORSO" -> "torso"
+        "LEFT ARM" -> "arm_left"
+        "RIGHT ARM" -> "arm_right"
+        "LEFT LEG" -> "leg_left"
+        else -> "leg_right"
+    }
     Column(modifier.border(1.dp, Phosphor.copy(alpha = .25f)).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(label.replace("LEFT ", "L ").replace("RIGHT ", "R "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 6.sp)
+        if (value != null) PackAssetIcon("body_${assetPart}_${status(value).lowercase()}", Modifier.size(32.dp), "${label} ${status(value).lowercase()}")
         Text(value?.let { "${(it * 100).toInt()}%" } ?: "--", color = value?.let(tint) ?: Phosphor.copy(alpha = .4f), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Box(Modifier.fillMaxWidth().height(4.dp).background(Phosphor.copy(alpha = .12f))) {
             if (value != null) Box(Modifier.fillMaxWidth(value.coerceIn(0.0, 1.0).toFloat()).fillMaxHeight().background(tint(value)))
