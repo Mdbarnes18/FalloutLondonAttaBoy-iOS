@@ -9,7 +9,14 @@ struct ScreenHeader: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(title).font(.system(size: 25, weight: .black, design: .monospaced)).tracking(2)
                 Spacer()
-                Text(state.gameWorld == .london ? "LONDON // 202" : "COMMONWEALTH // 2287").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(PipTheme.amberDim)
+                Image(state.gameWorld == .london ? "pack_world_london" : "pack_world_commonwealth")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 22, height: 22)
+                    .accessibilityHidden(true)
+                Text(state.gameWorld == .london ? "LONDON // 202" : "COMMONWEALTH // 2287")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(PipTheme.amberDim)
             }
             Text(subtitle).font(.system(size: 9, weight: .medium, design: .monospaced)).tracking(1.6).foregroundStyle(PipTheme.muted)
             Rectangle().fill(PipTheme.amberDim).frame(height: 1).padding(.top, 7)
