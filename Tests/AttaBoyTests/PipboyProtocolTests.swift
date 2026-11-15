@@ -54,6 +54,19 @@ final class PipboyProtocolTests: XCTestCase {
         XCTAssertTrue(deleted.contains("Deleted Record(11): playerinfo.currhp => removed"))
     }
 
+    func testFlattenedValuesStopsAtCyclicObjectReferences() {
+        let database = PipboyDatabase()
+        database.apply(.data(PipboyDataUpdate(records: [
+            .object(nodeID: 0, added: [(key: "branch", nodeID: 10)], removed: []),
+            .object(nodeID: 10, added: [(key: "back", nodeID: 0), (key: "value", nodeID: 11)], removed: []),
+            .value(nodeID: 11, value: .string("safe"))
+        ])))
+
+        let values = database.flattenedValues()
+        XCTAssertEqual(values["branch.value"], .string("safe"))
+        XCTAssertEqual(values.count, 1)
+    }
+
     func testLocalMapRejectsInvalidDimensions() {
         let payload = Data(repeating: 0, count: 32)
         guard case .unknown(let type, _) = PipboyPacketDecoder.decode(type: 4, payload: payload) else {
