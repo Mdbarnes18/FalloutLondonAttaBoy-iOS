@@ -270,5 +270,5 @@ jobs:
           gh release create "$VERSION" release/Fallout-London-Companion-"$VERSION"-* release/SHA256SUMS-"$VERSION".txt release/CHANGELOG-"$VERSION".md release/BUILD-MANIFEST-"$VERSION".json \
             --repo "$REPO" \
             --title "Fallout London Companion $VERSION" \
-            --notes-file release-notes.md \
+            --notes-file release/CHANGELOG-"$VERSION".md \
             --target "$SHA"
