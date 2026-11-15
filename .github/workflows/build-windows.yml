@@ -63,12 +63,16 @@ jobs:
             }
           } finally { $outputStream.Dispose() }
           if (-not (Test-Path $output)) { throw "Portable EXE was not created" }
+          $zip = "$env:GITHUB_WORKSPACE\Fallout London Companion Windows Portable.zip"
+          Compress-Archive -Path $app -DestinationPath $zip -CompressionLevel Optimal
+          if (-not (Test-Path $zip)) { throw "Portable ZIP was not created" }
       - name: Collect Windows artifacts
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE\release" | Out-Null
           Copy-Item (Get-ChildItem "build\compose\binaries\main-release\msi\*.msi" | Select-Object -First 1).FullName "$env:GITHUB_WORKSPACE\release\Fallout London Companion Windows Installer.msi"
           Copy-Item "$env:GITHUB_WORKSPACE\Fallout London Companion Windows Portable.exe" "$env:GITHUB_WORKSPACE\release\"
+          Copy-Item "$env:GITHUB_WORKSPACE\Fallout London Companion Windows Portable.zip" "$env:GITHUB_WORKSPACE\release\"
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
