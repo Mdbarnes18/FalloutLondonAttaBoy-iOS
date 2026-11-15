@@ -28,7 +28,7 @@ struct ContentView: View {
                     .tracking(2)
                     .foregroundStyle(PipTheme.amber)
                 Spacer()
-                Image(state.gameWorld == .london ? "world_london" : "world_commonwealth")
+                Image(state.gameWorld == .london ? "pack_world_london" : "pack_world_commonwealth")
                     .resizable().scaledToFit().frame(width: 22, height: 22)
                     .accessibilityHidden(true)
                 Text("FALLOUT // \(state.gameWorld == .london ? "LONDON" : "COMMONWEALTH")")
