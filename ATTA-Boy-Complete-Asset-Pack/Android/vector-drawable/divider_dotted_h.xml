@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="8dp"
+    android:viewportWidth="128"
+    android:viewportHeight="8">
+    <path
+        android:pathData="M6 4h.01M14 4h.01M22 4h.01M30 4h.01M38 4h.01M46 4h.01M54 4h.01M62 4h.01M70 4h.01M78 4h.01M86 4h.01M94 4h.01M102 4h.01M110 4h.01M118 4h.01M126 4h.01"
+        android:strokeColor="#FF4CFF7F"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeAlpha="0.7"/>
+</vector>

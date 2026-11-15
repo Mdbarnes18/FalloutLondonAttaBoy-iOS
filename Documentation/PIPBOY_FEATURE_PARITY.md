@@ -43,9 +43,9 @@ Status is based on repository code inspection, not on a claim that the feature h
 | Auto Doc | Missing | Missing | Missing | Configurable Stimpak, RadAway, Rad-X, Med-X, Addictol policies, inventory limits, active-effect/radiation state, cooldown and safety guards |
 | Doctor's Bag / aid browser | Partial | Partial | Partial | Aid inventory exists; dedicated treatment-oriented browser and filters are incomplete |
 | Active effects | Partial | Partial | Partial | Full effect/source interpretation and status display parity |
-| Data Browser | Added | Present | Present | iOS browser added in this branch; hierarchy/metadata parity and live validation remain |
-| Plain-text diagnostic export | Added | Present | Present | iOS file export added in this branch; standardize metadata and verify saved files on all platforms |
-| Data Update Logger | Missing | Missing | Missing | Update event history, filters, pause/clear and export |
+| Data Browser | Present | Present | Present | Hierarchical navigation, consistent metadata, large-tree performance and live validation remain |
+| Plain-text diagnostic export | Present | Present | Present | Standardize build/session metadata, include all decoded values and verify saved files on physical devices |
+| Data Update Logger | Present | Present | Present | Bounded event history and text export exist; add filtering/pause controls and verify event completeness and persistence expectations |
 | Global / local map | Partial | Partial | Partial | Live coordinate plot exists on desktop/mobile; proper map rendering, layers and local-map decoder remain |
 | Location Browser / notes / POI / collectibles | Missing | Partial | Partial | Full location list, notes, custom markers, collectible tracking and persistence |
 | Quests | Present | Present | Present | Objective/action parity and game-specific schema verification |
@@ -58,7 +58,7 @@ Status is based on repository code inspection, not on a claim that the feature h
 
 ## Implementation order
 
-1. **Diagnostics and data inspection:** complete cross-platform plain-text export, searchable data browser, update logger, stable metadata, and tests using captured protocol fixtures.
+1. **Diagnostics and data inspection:** harden the existing cross-platform plain-text export, searchable data browser and update logger; standardize metadata, add export/logger tests using captured protocol fixtures, and verify saved files on devices.
 2. **Inventory and aid:** normalize all inventory categories and properties, equipped weapons/grenades, ammo, aid filters, item actions, and Doctor's Bag.
 3. **Medical automation:** implement Auto Doc as an opt-in rules engine, preserving the original configurable triggers while adding strict live-session, inventory, cooldown, and duplicate-action guards. Keep automatic Rad-X, RadAway, Med-X, and Addictol disabled by default.
 4. **Player condition:** expose body/head flags and six limb conditions with a consistent visual layout on every platform.

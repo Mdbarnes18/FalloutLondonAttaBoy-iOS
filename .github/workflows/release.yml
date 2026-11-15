@@ -65,6 +65,13 @@ jobs:
           [[ "$version" =~ ^[0-9]+\.[0-9]{2}$ ]]
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Check out exact release source
+        if: steps.builds.outputs.release_ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
       - name: Download platform artifacts
         if: steps.builds.outputs.release_ready == 'true'
         env:
@@ -110,67 +117,142 @@ jobs:
           (cd release && sha256sum Fallout-London-Companion-"$VERSION"-* > "SHA256SUMS-$VERSION.txt")
           test "$(find release -maxdepth 1 -type f | wc -l)" -eq 9
 
-      - name: Write human-authored release notes
+      - name: Generate versioned release notes and build manifest
         if: steps.builds.outputs.release_ready == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
           SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+          IOS_RUN: ${{ steps.builds.outputs.ios_run }}
+          ANDROID_RUN: ${{ steps.builds.outputs.android_run }}
+          WINDOWS_RUN: ${{ steps.builds.outputs.windows_run }}
+          LINUX_RUN: ${{ steps.builds.outputs.linux_run }}
         run: |
-          cat > release-notes.md <<EOF
-          # Fallout London Companion $VERSION
+          set -euo pipefail
+          python3 <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
 
-          A coordinated multi-platform build of Fallout London Companion, the independent ATTA-Boy-style companion for Fallout 4 / Fallout: London.
+          version = os.environ["VERSION"]
+          sha = os.environ["SHA"]
+          repo = os.environ["REPO"]
+          release_dir = Path("release")
+
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          lines = changelog.splitlines()
+          sections = []
+          current_title = None
+          current_lines = []
+          for line in lines:
+              if line.startswith("## "):
+                  if current_title is not None:
+                      sections.append((current_title, current_lines))
+                  current_title, current_lines = line[3:].strip(), []
+              elif current_title is not None:
+                  current_lines.append(line)
+          if current_title is not None:
+              sections.append((current_title, current_lines))
+
+          matching = [(title, body) for title, body in sections
+                      if title.lower().startswith(version.lower())]
+          if not matching:
+              matching = [(title, body) for title, body in sections
+                          if title.lower().startswith("unreleased")]
+          if not matching:
+              raise SystemExit("CHANGELOG.md has no section for this version or Unreleased changes.")
+          change_title, change_lines = matching[0]
+          change_body = "\n".join(change_lines).strip()
+          if not change_body:
+              raise SystemExit("The selected CHANGELOG.md section is empty; refusing a changelog-free release.")
+
+          packages = sorted(p for p in release_dir.iterdir()
+                            if p.is_file() and p.name.startswith(f"Fallout-London-Companion-{version}-"))
+          if len(packages) != 8:
+              raise SystemExit(f"Expected 8 installable packages, found {len(packages)}.")
+          checksum_file = release_dir / f"SHA256SUMS-{version}.txt"
+          if not checksum_file.is_file():
+              raise SystemExit("SHA256SUMS file is missing.")
+
+          labels = {
+              ".ipa": ("iOS / iPadOS", "Unsigned IPA; requires signing/sideloading."),
+              ".apk": ("Android", "Debug APK for sideloading/testing."),
+              ".msi": ("Windows", "Windows installer."),
+              ".exe": ("Windows", "Portable self-extracting package."),
+              ".AppImage": ("Linux", "x86_64 AppImage."),
+              ".deb": ("Linux", "Debian/Ubuntu package."),
+              ".rpm": ("Linux", "RPM package."),
+              ".flatpak": ("Linux", "Flatpak bundle.")
+          }
+          table = ["| Platform | Download | Package notes |", "|---|---|---|"]
+          manifest_packages = []
+          for path in packages:
+              platform, note = labels.get(path.suffix, ("Package", "Installable build."))
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              table.append(f"| {platform} | [{path.name}](https://github.com/{repo}/releases/download/{version}/{path.name}) | {note} |")
+              manifest_packages.append({"file": path.name, "size_bytes": path.stat().st_size,
+                                        "sha256": digest})
+
+          table_text = "\n".join(table)
+          notes = f"""# Fallout London Companion {version}
+
+          Coordinated four-platform release for Fallout 4 (Commonwealth) and Fallout: London.
+          All installable files below were produced from the same source commit.
+
+          ## What's changed
+
+          Source changelog section: **{change_title}**
+
+          {change_body}
 
           ## Downloads
 
-          All packages below are built from the same source revision and carry the same release version.
+          {table_text}
 
-          | Platform | Package | Notes |
-          |---|---|---|
-          | iOS / iPadOS | `Fallout-London-Companion-$VERSION-iOS-unsigned.ipa` | Unsigned IPA; requires a compatible sideloading/signing workflow. |
-          | Android | `Fallout-London-Companion-$VERSION-Android.apk` | Debug APK; intended for testing and sideloading. |
-          | Windows | `Fallout-London-Companion-$VERSION-Windows-Installer.msi` | Windows installer. |
-          | Windows | `Fallout-London-Companion-$VERSION-Windows-Portable.exe` | Portable self-extracting package. |
-          | Linux | `Fallout-London-Companion-$VERSION-Linux-x86_64.AppImage` | x86_64 AppImage. |
-          | Linux | `Fallout-London-Companion-$VERSION-Linux-amd64.deb` | Debian/Ubuntu package. |
-          | Linux | `Fallout-London-Companion-$VERSION-Linux-x86_64.rpm` | RPM package. |
-          | Linux | `Fallout-London-Companion-$VERSION-Linux.flatpak` | Flatpak bundle. |
+          [SHA-256 checksums](https://github.com/{repo}/releases/download/{version}/{checksum_file.name}) are provided for all eight packages.
 
-          `SHA256SUMS-$VERSION.txt` contains SHA-256 checksums for all eight installable packages.
+          ## Installation notes
 
-          ## Version 1.01 changes
+          - **iOS:** the IPA is unsigned. Sign it with a compatible sideloading workflow before installation.
+          - **Android:** the APK is a debug build intended for direct installation/testing, not a Play Store-signed release.
+          - **Windows:** choose the installer for a normal installation or the portable executable for a self-contained launch.
+          - **Linux:** choose AppImage, DEB, RPM, or Flatpak according to your distribution and preference.
 
-          - **iOS:** retain the canonical 1024×1024 app artwork in the asset catalog; marketing version and build number are updated to 1.01 / 101.
-          - **Android:** use the repository's canonical `Assets/AppIcon-Original.png` through the Gradle icon-copy task; remove the obsolete CI download from the retired companion repository; Android version code advances to 146.
-          - **Windows and Linux:** native package metadata now follows the shared `VERSION` file (1.01) rather than a stale hard-coded desktop package version. Both builds continue using the canonical repository artwork.
-          - No gameplay or companion-protocol behavior changes are included in this packaging release.
+          ## Verification and known limitations
 
-          ## Included capabilities
+          All four platform build workflows must succeed for this release to be created. CI success confirms the configured build and test steps; it does not by itself prove live-game protocol behavior or visual correctness. Consult the README and documentation for current game-version, command, and map-data verification boundaries.
 
-          - STAT, inventory, DATA, MAP and RADIO companion interface foundations.
-          - LAN discovery and connection to the PC Pip-Boy companion service.
-          - Shared protocol framing and binary database decoding safeguards.
-          - Native platform packaging for iOS, Android, Windows and Linux.
-
-          ## Important limitations
-
-          - iOS package is unsigned and must be signed or installed through a compatible sideloading service.
-          - Android package is a debug build.
-          - Runtime behavior must be validated against a live Fallout: London session; passing CI builds does not establish complete gameplay compatibility or feature parity.
-          - A curated Fallout: London world-map basemap and some game-specific data/command behavior remain unverified. See the repository documentation for the current verification boundary.
-
-          ## Installation and support
-
-          Read the repository README for platform-specific installation guidance, LAN setup, troubleshooting and known limitations. Keep companion traffic on a trusted private network; do not expose the game's companion ports to the public internet.
+          Keep companion traffic on a trusted private network. The game companion protocol has no authentication or encryption; do not expose its ports to the public internet.
 
           ## Build provenance
 
-          Source revision: `$SHA`
+          - Repository: {repo}
+          - Source commit: [{sha[:12]}](https://github.com/{repo}/commit/{sha})
+          - iOS workflow run: {os.environ["IOS_RUN"]}
+          - Android workflow run: {os.environ["ANDROID_RUN"]}
+          - Windows workflow run: {os.environ["WINDOWS_RUN"]}
+          - Linux workflow run: {os.environ["LINUX_RUN"]}
 
-          This release is generated from one successful build per platform group. No autogenerated contributor list is included.
-
-          Fallout London Companion is an independent fan project and is not affiliated with or endorsed by Bethesda or Team FOLON. Fallout: London and related marks belong to their respective owners.
-          EOF
+          Independent fan project; not affiliated with or endorsed by Bethesda or Team FOLON.
+          """
+          (release_dir / f"CHANGELOG-{version}.md").write_text(notes, encoding="utf-8")
+          manifest = {
+              "product": "Fallout London Companion",
+              "version": version,
+              "source_commit": sha,
+              "repository": repo,
+              "workflow_runs": {
+                  "ios": int(os.environ["IOS_RUN"]),
+                  "android": int(os.environ["ANDROID_RUN"]),
+                  "windows": int(os.environ["WINDOWS_RUN"]),
+                  "linux": int(os.environ["LINUX_RUN"])
+              },
+              "packages": manifest_packages,
+              "checksums_file": checksum_file.name
+          }
+          (release_dir / f"BUILD-MANIFEST-{version}.json").write_text(
+              json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          print(f"Generated detailed notes and provenance for {len(packages)} packages.")
+          PY
 
       - name: Create coordinated release
         if: steps.builds.outputs.release_ready == 'true'
@@ -185,8 +267,8 @@ jobs:
             echo "Release $VERSION already exists; refusing to replace it."
             exit 0
           fi
-          gh release create "$VERSION" release/Fallout-London-Companion-"$VERSION"-* release/SHA256SUMS-"$VERSION".txt \
+          gh release create "$VERSION" release/Fallout-London-Companion-"$VERSION"-* release/SHA256SUMS-"$VERSION".txt release/CHANGELOG-"$VERSION".md release/BUILD-MANIFEST-"$VERSION".json \
             --repo "$REPO" \
             --title "Fallout London Companion $VERSION" \
-            --notes-file release-notes.md \
+            --notes-file release/CHANGELOG-"$VERSION".md \
             --target "$SHA"

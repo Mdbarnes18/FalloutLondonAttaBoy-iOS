@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="256dp"
+    android:height="256dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path
+        android:pathData="M9 3H247A6 6 0 0 1 253 9V247A6 6 0 0 1 247 253H9A6 6 0 0 1 3 247V9A6 6 0 0 1 9 3Z"
+        android:strokeColor="#FF4CFF7F"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+    <path
+        android:pathData="M16 14H240A2 2 0 0 1 242 16V240A2 2 0 0 1 240 242H16A2 2 0 0 1 14 240V16A2 2 0 0 1 16 14Z"
+        android:strokeColor="#FF4CFF7F"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeAlpha="0.5"/>
+    <path
+        android:pathData="M14 3v12.6M20 3v7M26 3v7M32 3v7M38 3v12.6M44 3v7M50 3v7M56 3v7M62 3v12.6M68 3v7M74 3v7M80 3v7M86 3v12.6M92 3v7M98 3v7M104 3v7M110 3v12.6M116 3v7M122 3v7M128 3v7M134 3v12.6M140 3v7M146 3v7M152 3v7M158 3v12.6M164 3v7M170 3v7M176 3v7M182 3v12.6M188 3v7M194 3v7M200 3v7M206 3v12.6M212 3v7M218 3v7M224 3v7M230 3v12.6M236 3v7M242 3v7M14 253v-12.6M20 253v-7M26 253v-7M32 253v-7M38 253v-12.6M44 253v-7M50 253v-7M56 253v-7M62 253v-12.6M68 253v-7M74 253v-7M80 253v-7M86 253v-12.6M92 253v-7M98 253v-7M104 253v-7M110 253v-12.6M116 253v-7M122 253v-7M128 253v-7M134 253v-12.6M140 253v-7M146 253v-7M152 253v-7M158 253v-12.6M164 253v-7M170 253v-7M176 253v-7M182 253v-12.6M188 253v-7M194 253v-7M200 253v-7M206 253v-12.6M212 253v-7M218 253v-7M224 253v-7M230 253v-12.6M236 253v-7M242 253v-7"
+        android:strokeColor="#FF4CFF7F"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeAlpha="0.8"/>
+    <path
+        android:pathData="M3 14h12.6M3 20h7M3 26h7M3 32h7M3 38h12.6M3 44h7M3 50h7M3 56h7M3 62h12.6M3 68h7M3 74h7M3 80h7M3 86h12.6M3 92h7M3 98h7M3 104h7M3 110h12.6M3 116h7M3 122h7M3 128h7M3 134h12.6M3 140h7M3 146h7M3 152h7M3 158h12.6M3 164h7M3 170h7M3 176h7M3 182h12.6M3 188h7M3 194h7M3 200h7M3 206h12.6M3 212h7M3 218h7M3 224h7M3 230h12.6M3 236h7M3 242h7M253 14h-12.6M253 20h-7M253 26h-7M253 32h-7M253 38h-12.6M253 44h-7M253 50h-7M253 56h-7M253 62h-12.6M253 68h-7M253 74h-7M253 80h-7M253 86h-12.6M253 92h-7M253 98h-7M253 104h-7M253 110h-12.6M253 116h-7M253 122h-7M253 128h-7M253 134h-12.6M253 140h-7M253 146h-7M253 152h-7M253 158h-12.6M253 164h-7M253 170h-7M253 176h-7M253 182h-12.6M253 188h-7M253 194h-7M253 200h-7M253 206h-12.6M253 212h-7M253 218h-7M253 224h-7M253 230h-12.6M253 236h-7M253 242h-7"
+        android:strokeColor="#FF4CFF7F"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeAlpha="0.8"/>
+</vector>

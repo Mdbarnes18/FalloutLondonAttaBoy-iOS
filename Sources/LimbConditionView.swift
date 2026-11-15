@@ -27,6 +27,19 @@ struct LimbConditionPanel: View {
         return PipTheme.pale
     }
 
+    private func illustrationName(_ key: String, value: Int) -> String {
+        let part: String
+        switch key {
+        case "HEAD": part = "head"
+        case "TORSO": part = "torso"
+        case "LEFT ARM": part = "arm_left"
+        case "RIGHT ARM": part = "arm_right"
+        case "LEFT LEG": part = "leg_left"
+        default: part = "leg_right"
+        }
+        return "pack_body_\(part)_\(state(value).lowercased())"
+    }
+
     var body: some View {
         PipPanel(title: "BODY // LIMB CONDITION") {
             Text("LIVE BODY-PART CONDITION · VALUES ARE READ FROM THE GAME DATABASE")
@@ -70,6 +83,11 @@ struct LimbConditionPanel: View {
                 Text(key.replacingOccurrences(of: "LEFT ", with: "L ").replacingOccurrences(of: "RIGHT ", with: "R "))
                     .font(.system(size: 7, weight: .bold, design: .monospaced))
                     .foregroundStyle(PipTheme.pale)
+                Image(illustrationName(key, value: current))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 42)
+                    .accessibilityLabel("\(key) \(state(current).lowercased())")
                 Text("\(current)%")
                     .font(.system(size: 12, weight: .black, design: .monospaced))
                     .foregroundStyle(color(current))

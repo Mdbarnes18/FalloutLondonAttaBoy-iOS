@@ -1,0 +1,1 @@
+Reproduce: `python3 build_assets.py` then `python3 build_finish.py` (needs Python 3, numpy, Pillow). `core.py` has an absolute output path in `ROOT`; change it first. Edit `palette.py` to re-theme, `icons_a.py` / `icons_b.py` / `ui_def.py` for artwork, `textures.py` / `audio.py` for textures and sound.

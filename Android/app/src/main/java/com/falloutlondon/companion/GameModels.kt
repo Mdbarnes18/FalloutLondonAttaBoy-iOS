@@ -178,7 +178,7 @@ class InventoryStore {
 }
 
 class MedicalController {
-    var autoStimpakEnabled = true
+    var autoStimpakEnabled = false
     var threshold = 0.35
     private var lastUseMs = 0L
 
