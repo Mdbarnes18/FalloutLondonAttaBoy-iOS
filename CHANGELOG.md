@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.03 — 2026-11-15
+
+- Establish sequential release numbering: each coordinated release advances the shared version by exactly one hundredth (1.03, 1.04, 1.05, and onward); existing release tags are never overwritten.
+- Require the release workflow to verify that the candidate version is the immediate successor to the latest published release before packaging or publishing.
+- Correct coordinated release workflow filtering so release orchestration follows successful platform builds on the active `dev` branch.
+- Make an existing release-tag collision a hard failure instead of reporting a successful workflow without publishing a new release.
+- Keep the four platform packages, nine installable formats, checksums, detailed changelog and provenance manifest tied to one source commit.
+
 ## 1.02 — 2026-11-15
 
 - Integrate the complete generated ATTA-Boy asset pack as preserved source material, with platform-native resource copies for iOS, Android, Windows and Linux; retain the existing approved app icon and branding.
