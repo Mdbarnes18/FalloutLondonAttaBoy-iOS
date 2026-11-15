@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Commonwealth support
+## 1.02 — 2026-11-15
 
 - Integrate the complete generated ATTA-Boy asset pack as preserved source material, with platform-native resource copies for iOS, Android, Windows and Linux; retain the existing approved app icon and branding.
 - Connect generated medical, body-condition, inventory-category and world-identity artwork to the relevant application screens; add interface navigation/button sound effects where supported.
