@@ -192,7 +192,7 @@ jobs:
               manifest_packages.append({"file": path.name, "size_bytes": path.stat().st_size,
                                         "sha256": digest})
 
-          table_text = "\\n".join(table)
+          table_text = "\n".join(table)
           notes = f"""# Fallout London Companion {version}
 
           Coordinated four-platform release for Fallout 4 (Commonwealth) and Fallout: London.
