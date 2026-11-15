@@ -16,7 +16,7 @@ A build is complete only when all of the following are true:
 4. Windows tests and installer/portable packaging pass.
 5. Linux tests and DEB/RPM/AppImage/Flatpak packaging pass.
 6. Required assets are present in the built platform packages and resource lookups are validated.
-7. The release is published with all eight installable packages, SHA-256 checksums, a detailed versioned changelog, and a build-provenance JSON manifest.
+7. The release is published with all nine installable packages, SHA-256 checksums, a detailed versioned changelog, and a build-provenance JSON manifest.
 8. Release notes clearly identify unsigned/debug packages and disclose live-game verification limitations.
 
 A partial platform build is a CI artifact, not a complete coordinated release.
@@ -28,7 +28,7 @@ Every complete release must include:
 - iOS unsigned IPA
 - Android APK
 - Windows MSI installer
-- Windows portable EXE
+- Windows portable EXE\n- Windows portable ZIP archive
 - Linux AppImage
 - Linux DEB
 - Linux RPM
