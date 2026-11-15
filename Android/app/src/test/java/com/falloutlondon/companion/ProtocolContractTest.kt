@@ -146,13 +146,14 @@ class ProtocolContractTest {
     @Test fun flattenedValuesStopsAtCyclicObjectReferences() {
         val database = PipboyDatabase()
         database.apply(PipboyUpdate.Data(listOf(
-            PipboyRecord.Object(0L, listOf("branch" to 10L), emptyList()),
+            PipboyRecord.Object(0L, listOf("branch" to 10L, "alias" to 10L), emptyList()),
             PipboyRecord.Object(10L, listOf("back" to 0L, "value" to 11L), emptyList()),
             PipboyRecord.Value(11L, PipboyValue.StringValue("safe"))
         )))
         val values = database.flattenedValues()
         assertEquals(PipboyValue.StringValue("safe"), values["branch.value"])
-        assertEquals(1, values.size)
+        assertEquals(PipboyValue.StringValue("safe"), values["alias.value"])
+        assertEquals(2, values.size)
     }
 
     @Test fun autoStimpakIsDisabledByDefault() {
