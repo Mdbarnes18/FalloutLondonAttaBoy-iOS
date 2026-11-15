@@ -2,7 +2,7 @@ name: Build Fallout London Companion Linux
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, main]
   pull_request:
     branches: [main]
   workflow_dispatch:
