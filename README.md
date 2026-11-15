@@ -1,7 +1,7 @@
 # Fallout London Companion
 
 <p align="center">
-  <img src="Assets/AppIcon-Original.png" alt="Original approved ATTA-Boy app icon" width="256">
+  <img src="Assets/AppIcon-Original.png" alt="Default ATTA-Boy app icon" width="256">
 </p>
 
 An independent, multi-platform **ATTA-Boy-style companion app** for **Fallout: London** and **Fallout 4**. Select London or the Commonwealth in Settings; the ATTA-Boy branding and interface remain the same. It connects to your game over your home network and shows your Pip-Boy data on a second screen: status, inventory, quests and data, map, and radio.
@@ -129,7 +129,7 @@ These describe the Fallout 4 protocol. Upstream projects keep their own licenses
 CI builds every platform on each push to `main` (see [`.github/workflows`](.github/workflows)). To build locally:
 
 - **iOS:** macOS with Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen). Run `xcodegen generate`, open `AttaBoy.xcodeproj`, and run the `AttaBoy` scheme. Unit tests: `AttaBoyTests`.
-- **Android:** open `Android/` in Android Studio, or run `./gradlew testDebugUnitTest assembleDebug` inside it. The build expects the pinned icon described in [ASSETS.md](Documentation/ASSETS.md).
+- **Android:** open `Android/` in Android Studio, or run `./gradlew testDebugUnitTest assembleDebug` inside it. The build expects the default project icon described in [ASSETS.md](Documentation/ASSETS.md); forks may substitute their own icon assets.
 - **Desktop (Windows/Linux):** open `Desktop/` in IntelliJ IDEA, or run `gradle test` inside it.
 - **Protocol fixtures:** `python3 Shared/tools/generate_and_verify_fixtures.py` checks the shared test packets against an independent reference decoder.
 
@@ -139,7 +139,7 @@ Bug reports are welcome; please use the issue template and include your platform
 
 ## Legal and attribution
 
-The approved project icon is locked artwork. Android and desktop CI retrieve the exact PNG from the original companion repository at pinned commit `b2e544f4279ddfbe3184b573de04b4104906f7f3`; see [ASSETS.md](Documentation/ASSETS.md).
+The repository includes a default ATTA-Boy project icon for convenience. Android and desktop CI currently retrieve the corresponding PNG from the original companion repository at pinned commit `b2e544f4279ddfbe3184b573de04b4104906f7f3`; see [ASSETS.md](Documentation/ASSETS.md) for provenance and build details. **This is not a locked or mandatory icon:** this is an open-source project, and anyone creating a fork may replace, modify, or remove the icon and use their own branding. Fork maintainers should update the relevant asset references and CI configuration as needed.
 
 Do not commit Bethesda game assets, decompiled proprietary code, private Team FOLON material, or permission correspondence. Confirm redistribution rights for each third-party asset before including it.
 
