@@ -89,6 +89,12 @@ jobs:
               exit 0
             fi
           done
+          version="$(gh api "repos/$REPO/contents/VERSION?ref=$SHA" --jq '.content' | base64 -d | tr -d '\r\n')"
+          if gh release view "$version" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Version $version is already published; this commit does not need another release."
+            echo "release_ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           echo "ios_run=$ios_run" >> "$GITHUB_OUTPUT"
           echo "android_run=$android_run" >> "$GITHUB_OUTPUT"
           echo "windows_run=$windows_run" >> "$GITHUB_OUTPUT"
