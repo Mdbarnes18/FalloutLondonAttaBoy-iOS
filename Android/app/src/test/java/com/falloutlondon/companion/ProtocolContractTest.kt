@@ -1,6 +1,7 @@
 package com.falloutlondon.companion
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -152,6 +153,10 @@ class ProtocolContractTest {
         val values = database.flattenedValues()
         assertEquals(PipboyValue.StringValue("safe"), values["branch.value"])
         assertEquals(1, values.size)
+    }
+
+    @Test fun autoStimpakIsDisabledByDefault() {
+        assertFalse(MedicalController().autoStimpakEnabled)
     }
 
     private fun u16(value: Int) = byteArrayOf(value.toByte(), (value shr 8).toByte())
