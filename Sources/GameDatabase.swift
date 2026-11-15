@@ -279,21 +279,22 @@ final class PipboyDatabase {
 
     func flattenedValues(prefix: String = "") -> [String: PipboyValue] {
         var output: [String: PipboyValue] = [:]
-        var visited = Set<UInt32>()
-        walk(id: rootID, path: prefix, output: &output, visited: &visited)
+        var activePath = Set<UInt32>()
+        walk(id: rootID, path: prefix, output: &output, activePath: &activePath)
         return output
     }
 
-    private func walk(id: UInt32, path: String, output: inout [String: PipboyValue], visited: inout Set<UInt32>) {
-        guard visited.insert(id).inserted, let n = nodes[id] else { return }
+    private func walk(id: UInt32, path: String, output: inout [String: PipboyValue], activePath: inout Set<UInt32>) {
+        guard activePath.insert(id).inserted, let n = nodes[id] else { return }
+        defer { activePath.remove(id) }
         if let value = n.value, !path.isEmpty { output[path] = value }
         for (key, childID) in n.objectChildren {
             let childPath = path.isEmpty ? key : "\(path).\(key)"
-            walk(id: childID, path: childPath, output: &output, visited: &visited)
+            walk(id: childID, path: childPath, output: &output, activePath: &activePath)
         }
         for (index, childID) in n.arrayChildren.enumerated() {
             let childPath = path.isEmpty ? "[\(index)]" : "\(path)[\(index)]"
-            walk(id: childID, path: childPath, output: &output, visited: &visited)
+            walk(id: childID, path: childPath, output: &output, activePath: &activePath)
         }
     }
 
