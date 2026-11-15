@@ -37,7 +37,7 @@ Every complete release must include:
 - Versioned Markdown changelog with direct download links and detailed changes
 - JSON build manifest containing source commit, platform workflow run IDs, package sizes, and SHA-256 digests
 
-Do not overwrite an existing release tag. If the release pipeline detects a version/tag collision, stop and require a new version.
+Use sequential release versions in `MAJOR.MINOR` format with a two-digit minor component: `1.03`, `1.04`, `1.05`, and so on. Every coordinated release must be exactly one increment above the latest published release. The release workflow validates this before packaging. Never overwrite an existing tag; a version collision or skipped/repeated version must fail the workflow.
 
 ## Visual integration standard
 
