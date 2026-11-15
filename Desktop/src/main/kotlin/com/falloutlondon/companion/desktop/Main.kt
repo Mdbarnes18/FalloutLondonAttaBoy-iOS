@@ -872,7 +872,7 @@ private fun loadSelectedGame(): String = prefs.get("selectedGame", "LONDON")
 private fun saveSelectedGame(value: String) { prefs.put("selectedGame", value) }
 private fun loadDemoMode(game: String)=prefs.getBoolean("demoMode_$game",false)
 private fun saveDemoMode(v:Boolean, game: String){prefs.putBoolean("demoMode_$game",v)}
-private fun loadAutoStimpak()=prefs.getBoolean("autoStimpak",true)
+private fun loadAutoStimpak()=prefs.getBoolean("autoStimpak",false)
 private fun saveAutoStimpak(v:Boolean){prefs.putBoolean("autoStimpak",v)}
 private fun loadAutoStimpakThreshold()=prefs.getDouble("autoStimpakThreshold",0.35)
 private fun saveAutoStimpakThreshold(v:Double){prefs.putDouble("autoStimpakThreshold",v)}
