@@ -206,7 +206,7 @@ jobs:
 
           ## Downloads
 
-          {"\n".join(table)}
+          {table_text}
 
           [SHA-256 checksums]({checksum_file.name}) are provided for all eight packages.
 
