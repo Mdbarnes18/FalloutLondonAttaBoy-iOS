@@ -9,7 +9,7 @@
 - Default Auto-Stimpak to disabled on Android and Windows/Linux, matching iOS; require users to explicitly opt in before automatic healing can consume inventory.
 - Guard decoded database flattening against cyclic/shared node references on iOS, Android and desktop, with regression tests for each implementation.
 - Make iOS simulator tests a required CI gate rather than allowing a failed test run to pass the build.
-- Generate version-specific release notes directly from this changelog after all four platform workflows succeed for the same dev-branch commit; attach the detailed Markdown changelog, SHA-256 checksums and a JSON build-provenance manifest to every coordinated release.
+- Generate version-specific release notes directly from this changelog after all four platform workflows succeed for the same dev-branch commit; attach all nine installable packages (including a Windows portable ZIP), the detailed Markdown changelog, SHA-256 checksums and a JSON build-provenance manifest to every coordinated release.
 - Add a persistent Fallout: London / Fallout 4 Commonwealth selector to iOS, Android, Windows and Linux without changing ATTA-Boy branding.
 - Clear stale live database state on profile changes; Android and desktop reconnect automatically when live mode is active.
 - Give Android and desktop the same live world-coordinate map plot and location register as iOS.
