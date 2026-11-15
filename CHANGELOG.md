@@ -6,6 +6,8 @@
 - Connect generated medical, body-condition, inventory-category and world-identity artwork to the relevant application screens; add interface navigation/button sound effects where supported.
 - Add manual game-PC IP connection controls to Android and Windows/Linux desktop as a reliable fallback when UDP discovery is unavailable; retain the existing TCP companion endpoint and demo-mode safety boundary.
 - Guard Android and desktop database graph traversal against cyclic object references and cover the behavior with protocol contract tests.
+- Default Auto-Stimpak to disabled on Android and Windows/Linux, matching iOS; require users to explicitly opt in before automatic healing can consume inventory.
+- Guard decoded database flattening against cyclic/shared node references on iOS, Android and desktop, with regression tests for each implementation.
 - Make iOS simulator tests a required CI gate rather than allowing a failed test run to pass the build.
 - Generate version-specific release notes directly from this changelog after all four platform workflows succeed for the same main-branch commit; attach the detailed Markdown changelog, SHA-256 checksums and a JSON build-provenance manifest to every coordinated release.
 - Add a persistent Fallout: London / Fallout 4 Commonwealth selector to iOS, Android, Windows and Linux without changing ATTA-Boy branding.
