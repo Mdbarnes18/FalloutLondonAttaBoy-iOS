@@ -57,14 +57,15 @@ final class PipboyProtocolTests: XCTestCase {
     func testFlattenedValuesStopsAtCyclicObjectReferences() {
         let database = PipboyDatabase()
         database.apply(.data(PipboyDataUpdate(records: [
-            .object(nodeID: 0, added: [(key: "branch", nodeID: 10)], removed: []),
+            .object(nodeID: 0, added: [(key: "branch", nodeID: 10), (key: "alias", nodeID: 10)], removed: []),
             .object(nodeID: 10, added: [(key: "back", nodeID: 0), (key: "value", nodeID: 11)], removed: []),
             .value(nodeID: 11, value: .string("safe"))
         ])))
 
         let values = database.flattenedValues()
         XCTAssertEqual(values["branch.value"], .string("safe"))
-        XCTAssertEqual(values.count, 1)
+        XCTAssertEqual(values["alias.value"], .string("safe"))
+        XCTAssertEqual(values.count, 2)
     }
 
     func testLocalMapRejectsInvalidDimensions() {
