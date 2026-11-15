@@ -55,7 +55,7 @@ Keep the supplied original app icon and established ATTA-Boy branding unchanged.
 
 ## Branch and review discipline
 
-- `dev` is the active development and coordinated-release branch; all four platform workflows and release automation run from `dev`.\n- Keep `main` stable; promote tested, release-ready `dev` work to `main` only through an intentional integration/release step.\n- Integrate substantial work through a focused pull request targeting `dev`.
+- `dev` is the active development and coordinated-release branch. All four platform workflows validate both `dev` and `main`; coordinated releases are assembled after all four builds pass for the same commit.\n- Keep `main` stable; promote tested, release-ready `dev` work to `main` only through an intentional integration/release step.\n- Integrate substantial work through a focused pull request targeting `dev`.
 - Preserve source asset packs and their manifest/provenance.
 - Keep broad cross-platform changes reviewable and avoid direct-to-main changes.
 - Do not merge a draft PR or declare a complete build until the acceptance gates above are satisfied.
