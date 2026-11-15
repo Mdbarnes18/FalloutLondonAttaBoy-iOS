@@ -153,12 +153,13 @@ jobs:
           pick release/android '*.apk' "Fallout-London-Companion-$VERSION-Android.apk"
           pick release/windows '*.msi' "Fallout-London-Companion-$VERSION-Windows-Installer.msi"
           pick release/windows '*.exe' "Fallout-London-Companion-$VERSION-Windows-Portable.exe"
+          pick release/windows '*.zip' "Fallout-London-Companion-$VERSION-Windows-Portable.zip"
           pick release/linux '*.AppImage' "Fallout-London-Companion-$VERSION-Linux-x86_64.AppImage"
           pick release/linux '*.deb' "Fallout-London-Companion-$VERSION-Linux-amd64.deb"
           pick release/linux '*.rpm' "Fallout-London-Companion-$VERSION-Linux-x86_64.rpm"
           pick release/linux '*.flatpak' "Fallout-London-Companion-$VERSION-Linux.flatpak"
           (cd release && sha256sum Fallout-London-Companion-"$VERSION"-* > "SHA256SUMS-$VERSION.txt")
-          test "$(find release -maxdepth 1 -type f | wc -l)" -eq 9
+          test "$(find release -maxdepth 1 -type f | wc -l)" -eq 10
 
       - name: Generate versioned release notes and build manifest
         if: steps.builds.outputs.release_ready == 'true'
@@ -210,8 +211,8 @@ jobs:
 
           packages = sorted(p for p in release_dir.iterdir()
                             if p.is_file() and p.name.startswith(f"Fallout-London-Companion-{version}-"))
-          if len(packages) != 8:
-              raise SystemExit(f"Expected 8 installable packages, found {len(packages)}.")
+          if len(packages) != 9:
+              raise SystemExit(f"Expected 9 installable packages, found {len(packages)}.")
           checksum_file = release_dir / f"SHA256SUMS-{version}.txt"
           if not checksum_file.is_file():
               raise SystemExit("SHA256SUMS file is missing.")
@@ -221,6 +222,7 @@ jobs:
               ".apk": ("Android", "Debug APK for sideloading/testing."),
               ".msi": ("Windows", "Windows installer."),
               ".exe": ("Windows", "Portable self-extracting package."),
+              ".zip": ("Windows", "Portable application archive."),
               ".AppImage": ("Linux", "x86_64 AppImage."),
               ".deb": ("Linux", "Debian/Ubuntu package."),
               ".rpm": ("Linux", "RPM package."),
@@ -251,7 +253,7 @@ jobs:
 
           {table_text}
 
-          [SHA-256 checksums](https://github.com/{repo}/releases/download/{version}/{checksum_file.name}) are provided for all eight packages.
+          [SHA-256 checksums](https://github.com/{repo}/releases/download/{version}/{checksum_file.name}) are provided for all nine packages.
 
           ## Installation notes
 
