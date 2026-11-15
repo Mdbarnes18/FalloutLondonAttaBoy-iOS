@@ -114,19 +114,19 @@ jobs:
         if: steps.builds.outputs.release_ready == 'true'
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Generate versioned release notes and build manifest
         if: steps.builds.outputs.release_ready == 'true'
         env:
-          VERSION: \${{ steps.version.outputs.version }}
-          SHA: \${{ github.event.workflow_run.head_sha }}
-          REPO: \${{ github.repository }}
-          IOS_RUN: \${{ steps.builds.outputs.ios_run }}
-          ANDROID_RUN: \${{ steps.builds.outputs.android_run }}
-          WINDOWS_RUN: \${{ steps.builds.outputs.windows_run }}
-          LINUX_RUN: \${{ steps.builds.outputs.linux_run }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+          IOS_RUN: ${{ steps.builds.outputs.ios_run }}
+          ANDROID_RUN: ${{ steps.builds.outputs.android_run }}
+          WINDOWS_RUN: ${{ steps.builds.outputs.windows_run }}
+          LINUX_RUN: ${{ steps.builds.outputs.linux_run }}
         run: |
           set -euo pipefail
           python3 <<'PY'
@@ -192,6 +192,7 @@ jobs:
               manifest_packages.append({"file": path.name, "size_bytes": path.stat().st_size,
                                         "sha256": digest})
 
+          table_text = "\\n".join(table)
           notes = f"""# Fallout London Companion {version}
 
           Coordinated four-platform release for Fallout 4 (Commonwealth) and Fallout: London.
