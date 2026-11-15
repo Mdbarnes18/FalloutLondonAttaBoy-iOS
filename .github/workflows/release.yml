@@ -1,6 +1,8 @@
 name: Release Fallout London Companion
 
 on:
+  push:
+    branches: [dev]
   workflow_run:
     workflows:
       - Build Fallout London Companion IPA
@@ -8,27 +10,68 @@ on:
       - Build Fallout London Companion Windows
       - Build Fallout London Companion Linux
     types: [completed]
-    branches: [dev]
+    branches: [main]
 
 permissions:
   actions: read
   contents: write
 
 concurrency:
-  group: combined-release-${{ github.event.workflow_run.head_sha }}
+  group: combined-release-${{ github.event.workflow_run.head_sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
   release:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     steps:
+      - name: Wait for all four platform builds on dev
+        if: github.event_name == 'push'
+        timeout-minutes: 110
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          workflows=(
+            "Build Fallout London Companion IPA"
+            "Build Fallout London Companion Android"
+            "Build Fallout London Companion Windows"
+            "Build Fallout London Companion Linux"
+          )
+          for attempt in $(seq 1 180); do
+            pending=0
+            for workflow in "${workflows[@]}"; do
+              result="$(gh run list --repo "$REPO" --workflow "$workflow" --commit "$SHA" --limit 1 --json databaseId,status,conclusion --jq '.[0] // {}')"
+              status="$(jq -r '.status // empty' <<< "$result")"
+              conclusion="$(jq -r '.conclusion // empty' <<< "$result")"
+              run_id="$(jq -r '.databaseId // empty' <<< "$result")"
+              if [[ -z "$run_id" || "$status" != "completed" ]]; then
+                pending=1
+                echo "Waiting for $workflow (status: ${status:-not queued})."
+              elif [[ "$conclusion" != "success" ]]; then
+                echo "$workflow completed with conclusion: $conclusion. No release will be published." >&2
+                exit 1
+              else
+                echo "$workflow passed (run $run_id)."
+              fi
+            done
+            if [[ "$pending" -eq 0 ]]; then
+              echo "All four platform builds passed for $SHA."
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "Timed out waiting for all platform builds for $SHA; no release will be published." >&2
+          exit 1
+
       - name: Check all platform builds
         id: builds
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           if gh api "repos/$REPO/contents/.release-reset-pending?ref=dev" >/dev/null 2>&1; then
@@ -58,7 +101,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           version="$(gh api "repos/$REPO/contents/VERSION?ref=$SHA" --jq '.content' | base64 -d | tr -d '\r\n')"
@@ -69,7 +112,7 @@ jobs:
         if: steps.builds.outputs.release_ready == 'true'
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - name: Download platform artifacts
@@ -121,7 +164,7 @@ jobs:
         if: steps.builds.outputs.release_ready == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           REPO: ${{ github.repository }}
           IOS_RUN: ${{ steps.builds.outputs.ios_run }}
           ANDROID_RUN: ${{ steps.builds.outputs.android_run }}
@@ -259,7 +302,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
