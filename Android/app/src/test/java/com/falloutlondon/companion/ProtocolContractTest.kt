@@ -142,6 +142,18 @@ class ProtocolContractTest {
         assertTrue(database.updateLog.isEmpty())
     }
 
+    @Test fun flattenedValuesStopsAtCyclicObjectReferences() {
+        val database = PipboyDatabase()
+        database.apply(PipboyUpdate.Data(listOf(
+            PipboyRecord.Object(0L, listOf("branch" to 10L), emptyList()),
+            PipboyRecord.Object(10L, listOf("back" to 0L, "value" to 11L), emptyList()),
+            PipboyRecord.Value(11L, PipboyValue.StringValue("safe"))
+        )))
+        val values = database.flattenedValues()
+        assertEquals(PipboyValue.StringValue("safe"), values["branch.value"])
+        assertEquals(1, values.size)
+    }
+
     private fun u16(value: Int) = byteArrayOf(value.toByte(), (value shr 8).toByte())
     private fun u32(value: Long) = byteArrayOf(value.toByte(), (value shr 8).toByte(), (value shr 16).toByte(), (value shr 24).toByte())
 }
