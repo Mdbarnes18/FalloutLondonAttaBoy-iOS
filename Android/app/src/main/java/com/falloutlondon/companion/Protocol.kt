@@ -353,13 +353,17 @@ object PipboyPacketDecoder {
 
     fun flattenedValues(prefix: String = ""): Map<String, PipboyValue> {
         val result = mutableMapOf<String, PipboyValue>()
-        val visited = mutableSetOf<Long>()
+        val activePath = mutableSetOf<Long>()
         fun walk(id: Long, path: String) {
-            if (!visited.add(id)) return
-            val node = nodes[id] ?: return
-            node.value?.let { if (path.isNotEmpty()) result[path] = it }
-            node.objectChildren.forEach { (key, child) -> walk(child, if (path.isEmpty()) key else "$path.$key") }
-            node.arrayChildren.forEachIndexed { index, child -> walk(child, "$path[$index]") }
+            if (!activePath.add(id)) return
+            try {
+                val node = nodes[id] ?: return
+                node.value?.let { if (path.isNotEmpty()) result[path] = it }
+                node.objectChildren.forEach { (key, child) -> walk(child, if (path.isEmpty()) key else "$path.$key") }
+                node.arrayChildren.forEachIndexed { index, child -> walk(child, "$path[$index]") }
+            } finally {
+                activePath.remove(id)
+            }
         }
         walk(0L, prefix)
         return result
