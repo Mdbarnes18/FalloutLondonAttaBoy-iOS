@@ -10,7 +10,7 @@ on:
       - Build Fallout London Companion Windows
       - Build Fallout London Companion Linux
     types: [completed]
-    branches: [main]
+    branches: [dev]
 
 permissions:
   actions: read
@@ -106,6 +106,25 @@ jobs:
           set -euo pipefail
           version="$(gh api "repos/$REPO/contents/VERSION?ref=$SHA" --jq '.content' | base64 -d | tr -d '\r\n')"
           [[ "$version" =~ ^[0-9]+\.[0-9]{2}$ ]]
+          latest="$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName // empty')"
+          if [[ -n "$latest" ]]; then
+            python3 - "$latest" "$version" <<'PY'
+          import re, sys
+          latest, candidate = sys.argv[1:]
+          pattern = re.compile(r"^(\d+)\.(\d{2})$")
+          previous = pattern.fullmatch(latest)
+          current = pattern.fullmatch(candidate)
+          if not previous or not current:
+              raise SystemExit(f"Release tags must use MAJOR.MINOR with a two-digit minor: latest={latest!r}, candidate={candidate!r}")
+          major, minor = map(int, previous.groups())
+          expected = f"{major}.{minor + 1:02d}"
+          if candidate != expected:
+              raise SystemExit(f"Release version must immediately follow {latest}; expected {expected}, got {candidate}.")
+          print(f"Sequential release version validated: {latest} -> {candidate}")
+          PY
+          else
+            echo "No previous published release; accepting initial version $version."
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Check out exact release source
@@ -309,8 +328,8 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$VERSION" --repo "$REPO" >/dev/null 2>&1; then
-            echo "Release $VERSION already exists; refusing to replace it."
-            exit 0
+            echo "Release $VERSION already exists; refusing to replace it." >&2
+            exit 1
           fi
           gh release create "$VERSION" release/Fallout-London-Companion-"$VERSION"-* release/SHA256SUMS-"$VERSION".txt release/CHANGELOG-"$VERSION".md release/BUILD-MANIFEST-"$VERSION".json \
             --repo "$REPO" \
